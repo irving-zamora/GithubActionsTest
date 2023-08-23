@@ -1,0 +1,60 @@
+name: Build, Bundle, Release Go Plugin
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  GO_VERSION: '1.19' # The Go version to use
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with: 
+        go-version: ${{ env.GO_VERSION}}
+
+    - name: Build Go Plugin
+      run: make go-build
+
+    - name: Run Tests & Generate Coverage
+      run: |
+        go test -v ./... -coverprofile=coverage.out
+        go tool cover -func=coverage.out > coverage.txt
+        go tool cover -html=coverage.out -o coverage.html
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: test-coverage
+        path: |
+          coverage.txt
+          coverage.html
+
+    - name: Display Test Results
+      uses: actions/upload-artifact@v2
+      with:
+       name: test-results
+       path: coverage.out
+
+    - name: Comment on Pull Request
+      uses: marocchino/sticky-pull-request-comment@v2
+      with:
+          message: |
+            Test Results:
+
+            ```plaintext
+            $(cat coverage.txt)
+            ```
+
+            Coverage Report: [Coverage Report](https://github.com/irving-zamora/api-gateway)
+            
