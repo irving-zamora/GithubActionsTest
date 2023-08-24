@@ -772,7 +772,7 @@ func TestSelectStrategyActiveIsFalse(t *testing.T) {
 }
 
 func TestSelectStrategyUnknownStrategy(t *testing.T) {
-	var expected = ""
+	var expected = "unknown strategy name: "
 	configDataJson := `{
 		"rateLimiting": {
 		  "active": true,
