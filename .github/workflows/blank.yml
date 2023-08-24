@@ -31,7 +31,7 @@ jobs:
 
     - name: Run Tests & Generate Coverage
       run: |
-        go test -v -coverprofile=coverage.txt
+        go test -v ./src/custom-go-plugin/go/src/
         go tool cover -func=coverage.txt > coverage.out
         go tool cover -html=coverage.out -o coverage.html
 
