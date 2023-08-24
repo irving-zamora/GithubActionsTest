@@ -26,7 +26,8 @@ jobs:
     - name: Build Go Plugin
       run: |
         cd src/custom-go-plugin
-        make go-build
+        docker compose run --rm tyk-plugin-compiler RateLimitingPlugin.so
+	      mv -f ./go/src/RateLimitingPlugin*.so ./tyk/middleware/RateLimitingPlugin.so
 
     - name: Run Tests & Generate Coverage
       run: |
