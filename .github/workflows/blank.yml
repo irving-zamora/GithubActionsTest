@@ -28,7 +28,7 @@ jobs:
         cd src/custom-go-plugin
         docker compose run --rm tyk-plugin-compiler RateLimitingPlugin.so
         mv -f ./go/src/RateLimitingPlugin*.so ./tyk/middleware/RateLimitingPlugin.so
-	
+
     - name: Run Tests & Generate Coverage
       run: |
         go test -v ./... -coverprofile=coverage.out
