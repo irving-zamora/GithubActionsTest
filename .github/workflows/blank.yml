@@ -24,13 +24,16 @@ jobs:
         go-version: ${{ env.GO_VERSION}}
 
     - name: Build Go Plugin
-      run: make go-build
-
-    - name: Run Tests & Generate Coverage
       run: |
-        go test -v ./... -coverprofile=coverage.out
-        go tool cover -func=coverage.out > coverage.txt
-        go tool cover -html=coverage.out -o coverage.html
+        cd src/custom-go-plugin
+        docker compose run --rm tyk-plugin-compiler RateLimitingPlugin.so
+        mv -f ./go/src/RateLimitingPlugin*.so ./tyk/middleware/RateLimitingPlugin.so
+
+    - name: Run Tests and Generate Coverage
+      run: |
+        cd ./src/custom-go-plugin/go/src/
+        go test -v -coverprofile=coverage.txt ./...
+        go tool cover -func=coverage.txt > coverage_summary.txt
 
     - name: Upload Artifacts
       uses: actions/upload-artifact@v2

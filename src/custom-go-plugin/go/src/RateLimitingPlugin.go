@@ -33,6 +33,7 @@ type RateLimitingConfig struct {
 		Seconds       int        `json:"seconds"`
 		SessionTtlMin int        `json:"sessionTtlMin"`
 		Strategy      Strategy   `json:"strategy"`
+		IsUnitTest    bool       `json:"isUnitTest"`
 		LogLevel      LogLevel   `json:"logLevel"`
 	} `json:"rateLimiting"`
 }
