@@ -23,6 +23,9 @@ jobs:
       with: 
         go-version: ${{ env.GO_VERSION}}
 
+    - name: Initialize Go Module
+      run: go mod init github.com/irving-zamora/GithubActionsTest
+
     - name: Build Go Plugin
       run: |
         cd src/custom-go-plugin
