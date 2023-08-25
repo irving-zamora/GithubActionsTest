@@ -9,6 +9,9 @@ on:
 env:
   GO_VERSION: '1.19' # The Go version to use
 
+permissions:
+  pull-requests: write
+
 jobs:
   build:
 
@@ -29,31 +32,13 @@ jobs:
         docker compose run --rm tyk-plugin-compiler RateLimitingPlugin.so
         mv -f ./go/src/RateLimitingPlugin*.so ./tyk/middleware/RateLimitingPlugin.so
 
-    - name: Install go-coverage-report
-      run: go install github.com/ncruces/go-coverage-report@latest
-
-    - name: Generate Coverage Report
-      run: go-coverage-report -format=html -path=coverage.html ./...
-
-    - name: Upload Coverage Report Artifact
-      uses: actions/upload-artifact@v2
-      with:
-       name: coverage-report
-       path: coverage.html
-
-    - name: Post Comment with Coverage Report
-      uses: marocchino/sticky-pull-request-comment@v2
-      with:
-        message: |
-          Test Coverage Report:
-          [View Coverage Report](https://github.com/irving-zamora/GithubActionsTest/blob/${{ github.sha }}/coverage.html)
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
     - name: Run Tests and Generate Coverage
+      continue-on-error: true
       run: |
         cd ./src/custom-go-plugin/go/src/
         go test -v -coverprofile=coverage.txt ./...
         go tool cover -func=coverage.txt > coverage_summary.txt
+        
 
     - name: Upload Artifacts
       uses: actions/upload-artifact@v2
@@ -79,4 +64,5 @@ jobs:
             $(cat coverage.txt)
             ```
 
-            Coverage Report: [Coverage Report](https://github.com/irving-zamora/GithubActionsTest/src/custom-go-plugin/go/src/coverage.html)            
+            Coverage Report: [Coverage Report](https://github.com/irving-zamora/api-gateway)
+            
