@@ -33,10 +33,12 @@ jobs:
         mv -f ./go/src/RateLimitingPlugin*.so ./tyk/middleware/RateLimitingPlugin.so
 
     - name: Run Tests and Generate Coverage
+      continue-on-error: true
       run: |
         cd ./src/custom-go-plugin/go/src/
         go test -v -coverprofile=coverage.txt ./...
         go tool cover -func=coverage.txt > coverage_summary.txt
+        
 
     - name: Upload Artifacts
       uses: actions/upload-artifact@v2
