@@ -54,11 +54,12 @@ jobs:
 
     - name: Run Tests and Generate Coverage
       continue-on-error: true
+      
+    - name: Run Tests and Generate Coverage
       run: |
         cd ./src/custom-go-plugin/go/src/
         go test -v -coverprofile=coverage.txt ./...
         go tool cover -func=coverage.txt > coverage_summary.txt
-        
 
     - name: Upload Artifacts
       uses: actions/upload-artifact@v2
@@ -84,5 +85,4 @@ jobs:
             $(cat coverage.txt)
             ```
 
-            Coverage Report: [Coverage Report](https://github.com/irving-zamora/api-gateway)
-            
+            Coverage Report: [Coverage Report](https://github.com/irving-zamora/GithubActionsTest/src/custom-go-plugin/go/src/coverage.html)            
