@@ -59,5 +59,7 @@ jobs:
             $(cat coverage.txt)
             ```
 
-            Coverage Report: [Coverage Report](https://github.com/irving-zamora/api-gateway)
+            Coverage Report: [Coverage Report](https://github.com/irving-zamora/GithubActionsTest)
+
+            [View Coverage Report](https://github.com/${{ irving-zamora/GithubActionsTest }}/blob/${{ github.sha }}/coverage.html)
             
