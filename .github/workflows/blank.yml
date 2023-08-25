@@ -30,7 +30,7 @@ jobs:
         mv -f ./go/src/RateLimitingPlugin*.so ./tyk/middleware/RateLimitingPlugin.so
 
     - name: Install go-coverage-report
-      run: go get -u github.com/ncruces/go-coverage-report
+      run: go install github.com/ncruces/go-coverage-report@latest
 
     - name: Generate Coverage Report
       run: go-coverage-report -format=html -path=coverage.html ./...
