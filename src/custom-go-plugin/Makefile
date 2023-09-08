@@ -46,28 +46,28 @@ up-oss: docker-up-oss bootstrap-oss docker-status
 # Gets the status of the running containers
 .PHONY: docker-status
 docker-status:
-	docker compose ps
+	docker-compose ps
 
 # Gets the container logs
 .PHONY: docker-logs
 docker-logs:
-	docker compose logs -t --tail="all"
+	docker-compose logs -t --tail="all"
 
 # Gets the container log for gateway and applies formatting for easier reading in local dev
 # note: this is not currently outputting logs from custom plug-in likely due to log output format
 .PHONY: docker-gateway-log
 docker-gateway-log:
-	docker compose logs -t -f tyk-gateway | perl -ne 'if (/time="([^"]+)" level=(\w+) msg="((?:\\"|[^"])*)"(\s*prefix=([^\s]+))?/) { print "$$1 ".sprintf("%-20s", "[$$2]".($$5 ? "[".substr($$5,0,10)."] " : (" " x 12)))."$$3\n" }'
+	docker-compose logs -t -f tyk-gateway | perl -ne 'if (/time="([^"]+)" level=(\w+) msg="((?:\\"|[^"])*)"(\s*prefix=([^\s]+))?/) { print "$$1 ".sprintf("%-20s", "[$$2]".($$5 ? "[".substr($$5,0,10)."] " : (" " x 12)))."$$3\n" }'
 
 # Gets the container log for gateway and follows logging
 .PHONY: docker-follow-gateway-log
 docker-follow-gateway-log:
-	docker compose logs -t -f tyk-gateway
+	docker-compose logs -t -f tyk-gateway
 
 # Bring docker containers up
 .PHONY: docker-up
 docker-up:
-	docker compose up -d --remove-orphans tyk-dashboard
+	docker-compose up -d --remove-orphans tyk-dashboard
 
 # Bootstrap dashboard
 .PHONY: bootstrap
@@ -77,12 +77,12 @@ bootstrap:
 # Bring docker containers down
 .PHONY: docker-down
 docker-down:
-	docker compose down --remove-orphans
+	docker-compose down --remove-orphans
 
 # Clean docker containers volumes
 .PHONY: docker-clean
 docker-clean:
-	docker compose down --volumes --remove-orphans
+	docker-compose down --volumes --remove-orphans
 
 ### Tyk Go Plugin ########################################################################
 
@@ -97,7 +97,7 @@ go/src/go.mod:
 .PHONY: go-build
 go-build: go/src/go.mod
 	/bin/sh -c "cd ./go/src && /snap/bin/go mod tidy && /snap/bin/go mod vendor"
-	docker compose run --rm tyk-plugin-compiler RateLimitingPlugin.so _$$(date +%s)
+	docker-compose run --rm tyk-plugin-compiler RateLimitingPlugin.so _$$(date +%s)
 	mv -f ./go/src/RateLimitingPlugin*.so ./tyk/middleware/
 
 # Runs Go Linter
@@ -125,7 +125,7 @@ coverage:
 # Builds production-ready Go plugin bundle as non-root user, using Tyk Bundler tool
 .PHONY: go-bundle
 go-bundle: go-build
-	docker compose run --rm --user=1000 --entrypoint "bundle/bundle-entrypoint.sh" tyk-gateway
+	docker-compose run --rm --user=1000 --entrypoint "bundle/bundle-entrypoint.sh" tyk-gateway
 
 # Cleans application files
 .PHONY: go-clean
