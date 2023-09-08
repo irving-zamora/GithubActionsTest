@@ -43,17 +43,17 @@ docker-status:
 # Gets the container logs
 .PHONY: docker-logs
 docker-logs:
-	docker compose logs -t --tail="all"
+	docker-compose logs -t --tail="all"
 
 # Bring docker containers up
 .PHONY: docker-up
 docker-up:
-	docker compose up -d --remove-orphans tyk-dashboard
+	docker-compose up -d --remove-orphans tyk-dashboard
 
 # Bring docker containers down
 .PHONY: docker-down
 docker-down:
-	docker compose down --remove-orphans
+	docker-compose down --remove-orphans
 
 ### Tyk Go Plugin ########################################################################
 
@@ -69,7 +69,7 @@ go-build:
 # Builds production-ready Go plugin bundle as non-root user, using Tyk Bundler tool
 .PHONY: go-bundle
 go-bundle: go-build
-	docker compose run --rm --user=1000 --entrypoint "bundle/bundle-entrypoint.sh" tyk-gateway
+	docker-compose run --rm --user=1000 --entrypoint "bundle/bundle-entrypoint.sh" tyk-gateway
 
 # Cleans application files
 .PHONY: go-clean
@@ -82,4 +82,4 @@ go-clean:
 # Restarts the Tyk Gateway to instantly load new iterations of the Go plugin
 .PHONY: restart-gateway
 restart-gateway:
-	-docker compose restart tyk-gateway
+	-docker-compose restart tyk-gateway
