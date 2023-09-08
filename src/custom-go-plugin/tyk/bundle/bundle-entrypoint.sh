@@ -3,6 +3,8 @@
 set -euo pipefail;
 echo "Building plugin bundle...";
 
+cd /opt/tyk-gateway/middleware
+ls
 # Copy custom plugin to bundle directory
 cp /opt/tyk-gateway/middleware/RateLimitingPlugin*.so /opt/tyk-gateway/bundle/RateLimitingPlugin.so;
 
@@ -19,7 +21,7 @@ mv bundle.zip RateLimitingPlugin_gw5.0.3_1.0.1.zip
 # talk of artifactory being replaced
 
 # Cleanup
-rm /opt/tyk-gateway/bundle/RateLimitingPlugin*.so;
+# rm /opt/tyk-gateway/bundle/RateLimitingPlugin*.so;
 
 # Exit
 echo "Done building plugin bundle.";
