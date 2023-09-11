@@ -58,8 +58,8 @@ jobs:
       with:
        name: test-results
        path: |
-         /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage.txt
-         /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage.html
+         artifact:test-results/coverage.txt
+         artifact:test-results/coverage.html
 
     - name: Comment on Pull Request
       uses: marocchino/sticky-pull-request-comment@v2
@@ -68,7 +68,7 @@ jobs:
             Test Results:
 
             ```plaintext
-            ${{cat /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage.html}}
+            $(cat artifact:test-results/coverage.html)
             ```
             [View Function-Level Coverage Report](artifact:coverage-func.html)
             Coverage Report: [Coverage Report](/home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage.html)
@@ -90,3 +90,7 @@ jobs:
       with:
        name: coverage-func
        path: coverage-func.html
+
+            Coverage Report: [View Coverage Report](artifact:test-results/coverage.html)
+             - [Coverage Text Report](artifact:test-results/coverage.txt)
+             - [Coverage HTML Report](artifact:test-results/coverage.html)
