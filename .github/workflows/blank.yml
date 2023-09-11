@@ -68,7 +68,7 @@ jobs:
             Test Results:
 
             ```plaintext
-            ${{cat /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage.html}}
+            $(cat /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage.html)
             ```
 
             Coverage Report: [Coverage Report](/home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage.html)
