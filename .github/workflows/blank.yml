@@ -55,8 +55,11 @@ jobs:
           /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage.html
           /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/junit-report.xml
 
-    - name: Install go-junit-report
-      run: go get -u github.com/jstemmer/go-junit-report
+    - name: Download go-junit-report
+      run: |
+       wget https://github.com/jstemmer/go-junit-report/releases/download/v2.0.0/go-junit-report-v2.0.0-linux-amd64.tar.gz -O junit-report
+       chmod +x junit-report
+       mv junit-report /usr/local/bin/
 
     - name: Run Tests and Generate JUnit XML Report
       continue-on-error: true
