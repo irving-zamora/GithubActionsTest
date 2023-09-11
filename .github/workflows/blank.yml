@@ -72,4 +72,6 @@ jobs:
             ```
 
             Coverage Report: [Coverage Report](/home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage.html)
-            
+             - [Coverage Text Report](artifact:/home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage.txt)
+             - [Coverage HTML Report](artifact:/home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage.html)
+    
