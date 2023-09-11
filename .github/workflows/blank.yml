@@ -71,6 +71,6 @@ jobs:
             $(cat artifact:test-results/coverage.html)
             ```
 
-            Coverage Report: [Coverage Report](artifact:test-results/coverage.html)
+            Coverage Report: [View Coverage Report](artifact:test-results/coverage.html)
              - [Coverage Text Report](artifact:test-results/coverage.txt)
              - [Coverage HTML Report](artifact:test-results/coverage.html)
