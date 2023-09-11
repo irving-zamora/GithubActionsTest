@@ -55,8 +55,11 @@ jobs:
           /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage.html
           /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/junit-report.xml
 
-    - name: Install go-junit-report
-      run: go get -u github.com/jstemmer/go-junit-report
+    - name: Download go-junit-report
+      run: |
+       wget https://github.com/jstemmer/go-junit-report/releases/download/v1.5.2/junit-report-linux-amd64 -O junit-report
+       chmod +x junit-report
+       mv junit-report /usr/local/bin/
         
     - name: Comment on Pull Request with Coverage Report and Download Links
       uses: marocchino/sticky-pull-request-comment@v2
