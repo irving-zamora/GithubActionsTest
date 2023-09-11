@@ -1,3 +1,7 @@
 pipeline {
     agent any
+    environment {
+        GO_VERSION = '1.20' 
+        TYK_VERSION = 'v5.0.3'
+    }
 }
