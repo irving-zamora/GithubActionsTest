@@ -37,6 +37,7 @@ jobs:
       run: |
         cd ./src/custom-go-plugin/go/src/
         go test -v -coverprofile=coverage.txt ./...
+        go test -v ./... | go-junit-report > junit-report.xml
         go tool cover -func=coverage.txt > coverage_summary.txt
         
     - name: Upload Go test results
@@ -52,45 +53,24 @@ jobs:
         path: |
           /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage.txt
           /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage.html
+          /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/junit-report.xml
 
-    - name: Display Test Results
-      uses: actions/upload-artifact@v2
-      with:
-       name: test-results
-       path: |
-         artifact:test-results/coverage.txt
-         artifact:test-results/coverage.html
-
-    - name: Comment on Pull Request
+    - name: Install go-junit-report
+      run: go get -u github.com/jstemmer/go-junit-report
+        
+    - name: Comment on Pull Request with Coverage Report and Download Links
       uses: marocchino/sticky-pull-request-comment@v2
       with:
           message: |
             Test Results:
-
-            ```plaintext
-            $(cat artifact:test-results/coverage.html)
-            ```
+          
             [View Function-Level Coverage Report](artifact:coverage-func.html)
-            Coverage Report: [Coverage Report](/home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage.html)
-    
-    - name: Generate Function-Level Coverage Report
-      run: go get -u github.com/ncruces/go-coverage-report
-    - run: go-coverage-report -o coverage-func.html -f html -i coverage.txt
-
-    - name: Comment on Pull Request with Coverage Report
-      uses: marocchino/sticky-pull-request-comment@v2
-      with:
-        message: |
-          Test Results:
-
-          [View Function-Level Coverage Report](artifact:coverage-func.html)
-
-    - name: Upload Coverage Function-Level Report
-      uses: actions/upload-artifact@v2
-      with:
-       name: coverage-func
-       path: coverage-func.html
-
-            Coverage Report: [View Coverage Report](artifact:test-results/coverage.html)
-             - [Coverage Text Report](artifact:test-results/coverage.txt)
-             - [Coverage HTML Report](artifact:test-results/coverage.html)
+            [View JUnit XML Report](artifact:test-results/junit-report.xml)
+            Coverage Report: [View Coverage Report](artifact:test-coverage/coverage.html)
+              - [Coverage Text Report](artifact:test-coverage/coverage.txt)
+              - [Coverage HTML Report](artifact:test-coverage/coverage.html)
+          
+            Download Artifacts:
+              - [Download Function-Level Coverage Report](artifact:coverage-func.html) ([Download](artifact:coverage-func.html))
+              - [Download Coverage Text Report](artifact:test-coverage/coverage.txt) ([Download](artifact:test-coverage/coverage.txt))
+              - [Download Coverage HTML Report](artifact:test-coverage/coverage.html) ([Download](artifact:test-coverage/coverage.html))
