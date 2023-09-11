@@ -88,9 +88,13 @@ jobs:
     - name: Upload Coverage Function-Level Report
       uses: actions/upload-artifact@v2
       with:
-       name: coverage-func
-       path: coverage-func.html
+        name: coverage-func
+        path: coverage-func.html
 
-            Coverage Report: [View Coverage Report](artifact:test-results/coverage.html)
-             - [Coverage Text Report](artifact:test-results/coverage.txt)
-             - [Coverage HTML Report](artifact:test-results/coverage.html)
+    - name: Comment on Pull Request with Coverage Report
+      uses: marocchino/sticky-pull-request-comment@v2
+      with:
+        message: |
+          Coverage Report: [View Coverage Report](artifact:test-coverage/coverage.html)
+           - [Coverage Text Report](artifact:test-coverage/coverage.txt)
+           - [Coverage HTML Report](artifact:test-coverage/coverage.html)
