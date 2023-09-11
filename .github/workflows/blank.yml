@@ -73,28 +73,19 @@ jobs:
             [View Function-Level Coverage Report](artifact:coverage-func.html)
             Coverage Report: [Coverage Report](/home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage.html)
     
-    - name: Generate Function-Level Coverage Report
-      run: go get -u github.com/ncruces/go-coverage-report
-    - run: go-coverage-report -o coverage-func.html -f html -i coverage.txt
-
-    - name: Comment on Pull Request with Coverage Report
+    - name: Comment on Pull Request with Coverage Report and Download Links
       uses: marocchino/sticky-pull-request-comment@v2
       with:
-        message: |
-          Test Results:
-
-          [View Function-Level Coverage Report](artifact:coverage-func.html)
-
-    - name: Upload Coverage Function-Level Report
-      uses: actions/upload-artifact@v2
-      with:
-        name: coverage-func
-        path: coverage-func.html
-
-    - name: Comment on Pull Request with Coverage Report
-      uses: marocchino/sticky-pull-request-comment@v2
-      with:
-        message: |
-          Coverage Report: [View Coverage Report](artifact:test-coverage/coverage.html)
-           - [Coverage Text Report](artifact:test-coverage/coverage.txt)
-           - [Coverage HTML Report](artifact:test-coverage/coverage.html)
+          message: |
+            Test Results:
+          
+            [View Function-Level Coverage Report](artifact:coverage-func.html)
+          
+            Coverage Report: [View Coverage Report](artifact:test-coverage/coverage.html)
+              - [Coverage Text Report](artifact:test-coverage/coverage.txt)
+              - [Coverage HTML Report](artifact:test-coverage/coverage.html)
+          
+            Download Artifacts:
+              - [Download Function-Level Coverage Report](artifact:coverage-func.html) ([Download](artifact:coverage-func.html))
+              - [Download Coverage Text Report](artifact:test-coverage/coverage.txt) ([Download](artifact:test-coverage/coverage.txt))
+              - [Download Coverage HTML Report](artifact:test-coverage/coverage.html) ([Download](artifact:test-coverage/coverage.html))
