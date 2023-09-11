@@ -37,6 +37,7 @@ jobs:
       run: |
         cd ./src/custom-go-plugin/go/src/
         go test -v -coverprofile=coverage.txt ./...
+        go test -v ./... | go-junit-report > junit-report.xml
         go tool cover -func=coverage.txt > coverage_summary.txt
         
     - name: Upload Go test results
@@ -52,27 +53,11 @@ jobs:
         path: |
           /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage.txt
           /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage.html
+          /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/junit-report.xml
 
-    - name: Display Test Results
-      uses: actions/upload-artifact@v2
-      with:
-       name: test-results
-       path: |
-         artifact:test-results/coverage.txt
-         artifact:test-results/coverage.html
-
-    - name: Comment on Pull Request
-      uses: marocchino/sticky-pull-request-comment@v2
-      with:
-          message: |
-            Test Results:
-
-            ```plaintext
-            $(cat artifact:test-results/coverage.html)
-            ```
-            [View Function-Level Coverage Report](artifact:coverage-func.html)
-            Coverage Report: [Coverage Report](/home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage.html)
-    
+    - name: Install go-junit-report
+      run: go get -u github.com/jstemmer/go-junit-report
+        
     - name: Comment on Pull Request with Coverage Report and Download Links
       uses: marocchino/sticky-pull-request-comment@v2
       with:
@@ -80,7 +65,7 @@ jobs:
             Test Results:
           
             [View Function-Level Coverage Report](artifact:coverage-func.html)
-          
+            [View JUnit XML Report](artifact:test-results/junit-report.xml)
             Coverage Report: [View Coverage Report](artifact:test-coverage/coverage.html)
               - [Coverage Text Report](artifact:test-coverage/coverage.txt)
               - [Coverage HTML Report](artifact:test-coverage/coverage.html)
