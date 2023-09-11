@@ -70,6 +70,23 @@ jobs:
             ```plaintext
             ${{cat /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage.html}}
             ```
-
+            [View Function-Level Coverage Report](artifact:coverage-func.html)
             Coverage Report: [Coverage Report](/home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage.html)
-            
+    
+    - name: Generate Function-Level Coverage Report
+      run: go get -u github.com/ncruces/go-coverage-report
+    - run: go-coverage-report -o coverage-func.html -f html -i coverage.txt
+
+    - name: Comment on Pull Request with Coverage Report
+      uses: marocchino/sticky-pull-request-comment@v2
+      with:
+        message: |
+          Test Results:
+
+          [View Function-Level Coverage Report](artifact:coverage-func.html)
+
+    - name: Upload Coverage Function-Level Report
+      uses: actions/upload-artifact@v2
+      with:
+       name: coverage-func
+       path: coverage-func.html
