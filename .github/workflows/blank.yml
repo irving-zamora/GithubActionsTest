@@ -39,7 +39,12 @@ jobs:
         go test -v -coverprofile=coverage.txt ./...
         go tool cover -func=coverage.txt > coverage_summary.txt
         
-
+    - name: Upload Go test results
+      uses: actions/upload-artifact@v3
+      with:
+        name: Go-results-${{ matrix.go-version }}
+        path: TestResults-${{ matrix.go-version }}.json
+          
     - name: Upload Artifacts
       uses: actions/upload-artifact@v2
       with:
