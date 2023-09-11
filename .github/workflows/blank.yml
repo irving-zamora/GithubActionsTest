@@ -62,11 +62,11 @@ jobs:
       uses: marocchino/sticky-pull-request-comment@v2
       with:
           message: |
-            Test Results:
+            Test Results :
           
             [View Function-Level Coverage Report](artifact:coverage-func.html)
             [View JUnit XML Report](artifact:test-results/junit-report.xml)
-            
+
             Coverage Report: [View Coverage Report](artifact:test-coverage/coverage.html)
               - [Coverage Text Report](artifact:test-coverage/coverage.txt)
               - [Coverage HTML Report](artifact:test-coverage/coverage.html)
