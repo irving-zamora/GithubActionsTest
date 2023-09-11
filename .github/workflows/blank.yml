@@ -50,7 +50,7 @@ jobs:
       with:
         name: test-coverage
         path: |
-          coverage.txt
+          /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage.txt
           coverage.html
 
     - name: Display Test Results
