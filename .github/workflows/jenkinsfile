@@ -4,4 +4,15 @@ pipeline {
         GO_VERSION = '1.20' 
         TYK_VERSION = 'v5.0.3'
     }
+    tools {
+        go '1.20'
+    }
+
+    stages {
+        stage('Clean Up') {
+            steps {
+                deleteDir()
+            }
+        }
+    }
 }
