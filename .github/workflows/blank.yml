@@ -7,7 +7,7 @@ on:
     branches: [ "main" ]
 
 env:
-  GO_VERSION: '1.19' # The Go version to use
+  GO_VERSION: '1.20' # The Go version to use
 
 permissions:
   pull-requests: write
