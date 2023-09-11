@@ -57,7 +57,7 @@ jobs:
 
     - name: Download go-junit-report
       run: |
-       wget https://github.com/jstemmer/go-junit-report/releases/download/v1.5.2/junit-report-linux-amd64 -O junit-report
+       wget https://github.com/jstemmer/go-junit-report/releases/download/v2.0.0/go-junit-report-v2.0.0-linux-amd64.tar.gz -O junit-report
        chmod +x junit-report
        mv junit-report /usr/local/bin/
         
