@@ -15,5 +15,12 @@ pipeline {
                 echo "cleaned"
             }
         }
+        stage('Checkout code') {
+            steps {
+                script {
+                    sh 'git clone https://github.com/irving-zamora/GithubActionsTest.git'
+                }
+            }
+        }
     }
 }
