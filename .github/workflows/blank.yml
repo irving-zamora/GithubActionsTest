@@ -61,12 +61,8 @@ jobs:
        chmod +x junit-report
        mv junit-report /usr/local/bin/
 
-    - name: Run Tests and Generate JUnit XML Report
-      continue-on-error: true
-      run: |
-        cd ./src/custom-go-plugin/go/src/
-        go test -v -json ./... > test-output.json
-        go-junit-report < test-output.json > test-report.xml
+    - name: Run go-junit-report
+      run: /usr/local/bin/go-junit-report < test-output.json > test-report.xml
 
     - name: Comment on Pull Request with Coverage Report and JUnit XML
       uses: marocchino/sticky-pull-request-comment@v2
