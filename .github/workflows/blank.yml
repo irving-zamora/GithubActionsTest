@@ -38,8 +38,8 @@ jobs:
         go install github.com/jstemmer/go-junit-report@latest
         cd ./src/custom-go-plugin/go/src/
         go test -v -coverprofile=coverage.txt ./...
-        go test -v ./... | go-junit-report > junit-report.xml
         go tool cover -func=coverage.txt > coverage_summary.txt
+        go tool cover -html=coverage.txt -o coverage.html
        
     - name: Upload Artifacts
       uses: actions/upload-artifact@v2
@@ -49,22 +49,7 @@ jobs:
           /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage_summary.txt
           /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage.txt
           /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage.html
-          /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/junit-report.xml
-          /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/test-report.xml
-
-    - name: Jest Coverage Comment
-      uses: MishaKav/jest-coverage-comment@main
-      with: 
-       title: Coverage Report
-       badge-title: Coverage
-       create-new-comment: true
-       summary-title: Coverage Summary
-       coverage-summary-path: /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage_summary.txt
-       junitxml-title: Coverage JUnit
-       junitxml-path: /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/junit-report.xml
-       coverage-title: Coverage Report
-       coverage-path: /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage.txt
-       
+          
     - name: Add Coverage PR Comment
       uses: marocchino/sticky-pull-request-comment@v2
       if: github.event_name == 'pull_request'
@@ -76,5 +61,3 @@ jobs:
           /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage_summary.txt
           /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage.txt
           /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage.html
-          /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/junit-report.xml
-          /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/test-report.xml
