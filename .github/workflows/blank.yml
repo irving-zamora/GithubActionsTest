@@ -1,4 +1,4 @@
-name: Build, Bundle, Release Go Plugin
+name: Build, Test, Comment PR Coverage Go Plugin
 
 on:
   push:
@@ -56,8 +56,12 @@ jobs:
       uses: marocchino/sticky-pull-request-comment@v2
       if: github.event_name == 'pull_request'
       with:
+        append: true
         recreate: true
         message: This is your comment message.
         path: |
+          /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage_summary.txt
+          /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage.txt
+          /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage.html
           /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/junit-report.xml
           /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/test-report.xml
