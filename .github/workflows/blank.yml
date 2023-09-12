@@ -40,7 +40,7 @@ jobs:
         go test -v -coverprofile=coverage.txt ./...
         go tool cover -func=coverage.txt > coverage_summary.txt
         go tool cover -html=coverage.txt -o coverage.html
-        go test go-junit-report > junit-report.xml
+        go test -v go-junit-report > junit-report.xml
        
     - name: Upload Artifacts
       uses: actions/upload-artifact@v2
