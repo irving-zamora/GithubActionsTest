@@ -72,18 +72,3 @@ jobs:
         recreate: true
         path: /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage_summary.txt
         message: This is your comment message.
-          
-    - name: Comment on Pull Request with Coverage Report and JUnit XML
-      uses: marocchino/sticky-pull-request-comment@v2
-      with:
-        message: |
-          Test Results:
-       
-          [View Function-Level Coverage Report](artifact:coverage-func.html)
-          [View JUnit XML Report](artifact:test-report.xml)
-        
-    - name: Upload JUnit XML Report
-      uses: actions/upload-artifact@v2
-      with:
-        name: test-report
-        path: test-report.xml
