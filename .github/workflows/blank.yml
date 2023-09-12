@@ -70,7 +70,8 @@ jobs:
       if: github.event_name == 'pull_request'
       with:
         recreate: true
-        path: test-report.xml
+        path: /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage_summary.txt
+        message: This is your comment message.
           
     - name: Comment on Pull Request with Coverage Report and JUnit XML
       uses: marocchino/sticky-pull-request-comment@v2
