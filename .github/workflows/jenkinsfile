@@ -22,5 +22,14 @@ pipeline {
                 }
             }
         }
+        stage('Build Go Plugin') {
+            steps {
+                sh '''
+                    cd GithubActionsTest/src/custom-go-plugin
+                    go env -w GOPROXY=https://proxy.golang.org,direct
+                    make build
+                '''
+            }
+        }
     }
 }
