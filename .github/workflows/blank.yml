@@ -63,7 +63,7 @@ jobs:
        junitxml-title: Coverage JUnit
        junitxml-path: /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/junit-report.xml
        coverage-title: Coverage Report
-       coverage-path: /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/junit-report.xml
+       coverage-path: /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage.txt
        
     - name: Add Coverage PR Comment
       uses: marocchino/sticky-pull-request-comment@v2
