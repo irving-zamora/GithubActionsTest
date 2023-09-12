@@ -35,6 +35,7 @@ jobs:
     - name: Run Tests and Generate Coverage
       continue-on-error: true
       run: |
+        go install github.com/jstemmer/go-junit-report@latest
         cd ./src/custom-go-plugin/go/src/
         go test -v -coverprofile=coverage.txt ./...
         go test -v ./... | go-junit-report > junit-report.xml
@@ -48,7 +49,6 @@ jobs:
 
     - name: Run go-junit-report
       run: |
-       go install github.com/jstemmer/go-junit-report@latest
        cd ./src/custom-go-plugin/go/src/
        go test -v -json ./... > test-output.json
        go generate ./...
