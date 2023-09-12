@@ -52,18 +52,26 @@ jobs:
        cd ./src/custom-go-plugin/go/src/
        go test -v -json ./... > test-output.json
        go generate ./...
-       go test -v ./... | go-junit-report < test-output.json > test-report.xml
+       go test -v ./... | go-junit-report < coverage.txt > test-report.xml
        
     - name: Upload Artifacts
       uses: actions/upload-artifact@v2
       with:
         name: test-coverage
         path: |
+          /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage_summary.txt
           /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage.txt
           /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage.html
           /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/junit-report.xml
           /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/test-report.xml
 
+    - name: Add Coverage PR Comment
+      uses: marocchino/sticky-pull-request-comment@v2
+      if: github.event_name == 'pull_request'
+      with:
+        recreate: true
+        path: test-report.xml
+          
     - name: Comment on Pull Request with Coverage Report and JUnit XML
       uses: marocchino/sticky-pull-request-comment@v2
       with:
