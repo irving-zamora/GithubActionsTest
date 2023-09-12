@@ -52,6 +52,15 @@ jobs:
           /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/junit-report.xml
           /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/test-report.xml
 
+    - name: Jest Coverage Comment
+      uses: MishaKav/jest-coverage-comment@main
+      with: 
+       title: Coverage Report
+       badge-title: Coverage
+       create-new-comment: true
+       junitxml-path: /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/junit-report.xml
+       coverage-path: /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage.txt
+     
     - name: Add Coverage PR Comment
       uses: marocchino/sticky-pull-request-comment@v2
       if: github.event_name == 'pull_request'
