@@ -45,7 +45,15 @@ jobs:
       with:
         name: Go-results-${{ matrix.go-version }}
         path: TestResults-${{ matrix.go-version }}.json
-          
+
+    - name: Run go-junit-report
+      run: |
+       go install github.com/jstemmer/go-junit-report@latest
+       cd ./src/custom-go-plugin/go/src/
+       go test -v -json ./... > test-output.json
+       go generate ./...
+       go test -v ./... | go-junit-report < test-output.json > test-report.xml
+       
     - name: Upload Artifacts
       uses: actions/upload-artifact@v2
       with:
@@ -54,20 +62,7 @@ jobs:
           /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage.txt
           /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage.html
           /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/junit-report.xml
-
-    - name: Download go-junit-report
-      run: |
-       wget https://github.com/jstemmer/go-junit-report/releases/download/v2.0.0/go-junit-report-v2.0.0-linux-amd64.tar.gz -O junit-report
-       chmod +x junit-report
-       mv junit-report /usr/local/bin/
-
-    - name: Run go-junit-report
-      run: |
-       cd ./src/custom-go-plugin/go/src/
-       go test -v -json ./... > test-output.json
-       go install github.com/jstemmer/go-junit-report@latest
-       go generate ./...
-       go test -v ./... | go-junit-report < test-output.json > test-report.xml
+          /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/test-report.xml
 
     - name: Comment on Pull Request with Coverage Report and JUnit XML
       uses: marocchino/sticky-pull-request-comment@v2
@@ -77,6 +72,8 @@ jobs:
        
           [View Function-Level Coverage Report](artifact:coverage-func.html)
           [View JUnit XML Report](artifact:test-report.xml)
+          
+        GITHUB_TOKEN: sadfmo
         
     - name: Upload JUnit XML Report
       uses: actions/upload-artifact@v2
