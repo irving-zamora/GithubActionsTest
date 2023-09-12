@@ -72,8 +72,6 @@ jobs:
        
           [View Function-Level Coverage Report](artifact:coverage-func.html)
           [View JUnit XML Report](artifact:test-report.xml)
-          
-        GITHUB_TOKEN: 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
         
     - name: Upload JUnit XML Report
       uses: actions/upload-artifact@v2
