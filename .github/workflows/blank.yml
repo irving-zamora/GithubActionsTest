@@ -65,7 +65,9 @@ jobs:
       run: |
        cd ./src/custom-go-plugin/go/src/
        go test -v -json ./... > test-output.json
-       /usr/local/bin/go-junit-report < test-output.json > test-report.xml
+       go install github.com/jstemmer/go-junit-report@latest
+       go generate ./...
+       go test -v ./... | go-junit-report < test-output.json > test-report.xml
 
     - name: Comment on Pull Request with Coverage Report and JUnit XML
       uses: marocchino/sticky-pull-request-comment@v2
