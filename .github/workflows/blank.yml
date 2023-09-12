@@ -65,7 +65,6 @@ jobs:
       run: |
        cd ./src/custom-go-plugin/go/src/
        go test -v -json ./... > test-output.json
-       go-junit-report < test-output.json > test-report.xml
        /usr/local/bin/go-junit-report < test-output.json > test-report.xml
 
     - name: Comment on Pull Request with Coverage Report and JUnit XML
