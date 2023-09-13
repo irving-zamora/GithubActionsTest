@@ -40,7 +40,7 @@ jobs:
         go test -v -coverprofile=coverage.txt ./...
         go tool cover -func=coverage.txt > coverage_summary.txt
         go tool cover -html=coverage.txt -o coverage.html
-        go test -v | go-junit-report > junit-report.xml
+        go tool cover -func=coverage.txt > junit-report.xml
        
     - name: Upload Artifacts
       uses: actions/upload-artifact@v2
@@ -51,7 +51,15 @@ jobs:
           /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage.txt
           /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage.html
           /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/junit-report.xml
-          
+
+    - name: Jest Coverage Comment
+      uses: MishaKav/jest-coverage-comment@main
+      with: 
+       title: Coverage Report
+       badge-title: Coverage
+       create-new-comment: true
+       junitxml-path: /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/junit-report.xml
+       
     - name: Add Coverage PR Comment
       uses: marocchino/sticky-pull-request-comment@v2
       if: github.event_name == 'pull_request'
