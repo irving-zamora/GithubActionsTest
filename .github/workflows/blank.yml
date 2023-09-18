@@ -38,7 +38,9 @@ jobs:
         go install github.com/jstemmer/go-junit-report@latest
         cd ./src/custom-go-plugin/go/src/
         go test -v -coverprofile=coverage.txt ./...
-        ls
+
+    - name: Create Test Coverage Files
+      run: |
         go tool cover -func=coverage.txt > coverage_summary.txt
         go tool cover -html=coverage.txt -o coverage.html
         go tool cover -func=coverage.txt > junit-report.xml
