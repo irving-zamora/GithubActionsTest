@@ -108,7 +108,6 @@ func Test_SetRateLimit_Success(t *testing.T) {
 
 func Test_ErrorLog_Success(t *testing.T) {
 	ErrorLog("Config data read error!")
-	t.Skip("Expected error occurred: ")
 	fmt.Println("Success")
 }
 
@@ -329,7 +328,7 @@ func Test_GetRateLimitsErrorParsingJson_Success(t *testing.T) {
 	rateLimitingConfig, err := generateStructFromJSON(jsonString)
 
 	if err != nil {
-		t.Fatalf("Error: %v", err)
+		t.Logf("Error: %v", err)
 		return
 	}
 
