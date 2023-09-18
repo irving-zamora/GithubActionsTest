@@ -328,7 +328,7 @@ func Test_GetRateLimitsErrorParsingJson_Success(t *testing.T) {
 	rateLimitingConfig, err := generateStructFromJSON(jsonString)
 
 	if err != nil {
-		t.Logf("Error: %v", err)
+		t.Fatalf("Error: %v", err)
 		return
 	}
 
