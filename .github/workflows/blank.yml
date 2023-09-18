@@ -41,6 +41,7 @@ jobs:
 
     - name: Create Test Coverage Files
       run: |
+        cd ./src/custom-go-plugin/go/src/
         go tool cover -func=coverage.txt > coverage_summary.txt
         go tool cover -html=coverage.txt -o coverage.html
         go tool cover -func=coverage.txt > junit-report.xml
