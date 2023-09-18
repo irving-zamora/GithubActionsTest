@@ -12,7 +12,6 @@ package main
 import (
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"regexp"
@@ -23,21 +22,21 @@ import (
 	"github.com/TykTechnologies/tyk/user"
 )
 
-var isUnitTest = false
-
 type RateLimitingConfig struct {
-	RateLimiting struct {
-		Active        bool       `json:"active"`
-		Overrides     []Override `json:"overrides"`
-		Requests      int        `json:"requests"`
-		Seconds       int        `json:"seconds"`
-		SessionTtlMin int        `json:"sessionTtlMin"`
-		Strategy      Strategy   `json:"strategy"`
-		LogLevel      LogLevel   `json:"logLevel"`
-	} `json:"rateLimiting"`
+	RateLimiting RateLimit `json:"rateLimiting"`
 }
 
-// I've defined additional structs Override and Strategy to accommodate the nested objects in the JSON string.
+type RateLimit struct {
+	Active        bool       `json:"active"`
+	Overrides     []Override `json:"overrides"`
+	Requests      int        `json:"requests"`
+	Seconds       int        `json:"seconds"`
+	SessionTtlMin int        `json:"sessionTtlMin"`
+	Strategy      Strategy   `json:"strategy"`
+	LogLevel      LogLevel   `json:"logLevel"`
+	IsUnitTest    bool       `json:"isUnitTest"`
+}
+
 type Override struct {
 	Method   string `json:"method"`
 	Requests int    `json:"requests"`
@@ -46,12 +45,18 @@ type Override struct {
 }
 
 type Strategy struct {
-	Config struct {
-		HeaderNames []string `json:"headerNames"`
-		Separator   string   `json:"separator"`
-	} `json:"config"`
-	Name string `json:"name"`
+	Config StrategyConfig `json:"config"`
+	Name   string         `json:"name"`
 }
+
+type StrategyConfig struct {
+	HeaderNames []string `json:"headerNames"`
+	Separator   string   `json:"separator"`
+}
+
+const requestHeaders = "requestHeaders"
+const requestHeadersXRS = "requestHeadersXRS"
+const sessionGuid = "sessionGuid"
 
 // The rate limiter function that will be configured to be invoked for each api definition that is
 // a part of the legacy phase 1 implementation.
@@ -78,7 +83,7 @@ func SetRateLimit(rw http.ResponseWriter, r *http.Request) {
 
 	rateLimitingConfig, err := generateStructFromJSON(apiDefinitionJson)
 	if err != nil {
-		fmt.Println("Error:", err)
+		ErrorLog("Error:", err)
 		return
 	}
 
@@ -99,7 +104,7 @@ func SetRateLimit(rw http.ResponseWriter, r *http.Request) {
 
 	requestsValue, secondsValue, sessionTtl, err := getRateLimits(rateLimitingConfig, overridePath, r.Method, keyID)
 	if err != nil {
-		fmt.Println("Error: ", err)
+		ErrorLog("Error: ", err)
 		return
 	}
 
@@ -132,9 +137,10 @@ func SetRateLimit(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	// check if we are in a unit test context or real world application
-	if strings.Contains(r.URL.Path, "testing") {
+	if rateLimitingConfig.RateLimiting.IsUnitTest {
 		DebugLog("Session will not be set as this is in a unit testing context")
-		isUnitTest = true
+		reachedSessionState := true
+		DebugLog("Reached end of SetRateLimit without errors ", reachedSessionState)
 		return
 	}
 	ctx.SetSession(r, session, true)
@@ -147,7 +153,6 @@ func SetRateLimit(rw http.ResponseWriter, r *http.Request) {
 // output: string formed by the request match
 // if no overrides were found an empty string is returned
 func lookForOverridesInRequest(requestUrl string, rateLimitingConfig RateLimitingConfig) string {
-
 	for _, override := range rateLimitingConfig.RateLimiting.Overrides {
 		resourceValue := override.Resource
 
@@ -190,6 +195,41 @@ func getRateLimits(rateLimitingConfig RateLimitingConfig, resource string, metho
 	return -1, -1, int64(-1), nil
 }
 
+// Function that calls the function to create unique key id
+// depending on the "strategyName" in the api definition config
+func selectStrategy(rateLimitingConfig RateLimitingConfig, req *http.Request) string {
+
+	if rateLimitingConfig.RateLimiting.Active {
+		name := rateLimitingConfig.RateLimiting.Strategy.Name
+
+		switch name {
+		case requestHeaders:
+			InfoLog("strategy to be applied: ", name)
+			keyID := createUniqueKeyIdHeaders(rateLimitingConfig, req)
+
+			return keyID
+		case requestHeadersXRS:
+			InfoLog("strategy to be applied: ", name)
+			keyID := createUniqueKeyIdHeaders(rateLimitingConfig, req)
+
+			return keyID
+		case sessionGuid:
+			InfoLog("strategy to be applied: ", name)
+			keyID := createUniqueKeyIDSessionGuid(req)
+
+			return keyID
+		case "otherName":
+			// Call other function based on the name
+
+		default:
+			return ("unknown strategy name: ")
+		}
+	}
+
+	InfoLog("No rate limit will be applied")
+	return ""
+}
+
 // This function takes in JSON string and http request as input parameters
 // http.Request representing the HTTP request from which the headers will be extracted.
 // The function retrieves the headers based on the "headerNames" specified in the JSON configuration.
@@ -198,17 +238,8 @@ func getRateLimits(rateLimitingConfig RateLimitingConfig, resource string, metho
 // the "KeyId" value is created by concatenating the "headerNames" separated by the "separator" as requested.
 func createUniqueKeyIdHeaders(rateLimitingConfig RateLimitingConfig, req *http.Request) string {
 
-	if rateLimitingConfig.RateLimiting.Strategy.Name == "requestHeadersXRS" {
-		authBase64 := req.Header.Get("Authorization")
-		authBase64WithoutBasic := strings.ReplaceAll(authBase64, "Basic ", "")
-
-		rawDecodedAuth, err := base64.StdEncoding.DecodeString(authBase64WithoutBasic)
-		if err != nil {
-			panic(err)
-		}
-		customerId := strings.Split(string(rawDecodedAuth), "|")
-
-		return customerId[0]
+	if rateLimitingConfig.RateLimiting.Strategy.Name == requestHeadersXRS {
+		return createUniqueKeyIdHeadersXRS(rateLimitingConfig, req)
 	}
 
 	headers := make([]string, len(rateLimitingConfig.RateLimiting.Strategy.Config.HeaderNames))
@@ -228,6 +259,19 @@ func createUniqueKeyIdHeaders(rateLimitingConfig RateLimitingConfig, req *http.R
 	return keyID
 }
 
+func createUniqueKeyIdHeadersXRS(rateLimitingConfig RateLimitingConfig, req *http.Request) string {
+	authBase64 := req.Header.Get("Authorization")
+	authBase64WithoutBasic := strings.ReplaceAll(authBase64, "Basic ", "")
+
+	rawDecodedAuth, err := base64.StdEncoding.DecodeString(authBase64WithoutBasic)
+	if err != nil {
+		panic(err)
+	}
+	customerId := strings.Split(string(rawDecodedAuth), "|")
+
+	return customerId[0]
+}
+
 // function takes an http.Request as input and retrieves the value of
 // the SessionGuid element from the request body using a regular expression.
 // Returns: The extracted SessionGuid value as a string, if found in the request body.
@@ -238,6 +282,7 @@ func createUniqueKeyIDSessionGuid(req *http.Request) string {
 		sb := string(body)
 		DebugLog("request body: ", sb)
 
+		// TODO: have a config property in api definition for the regular expression
 		re := regexp.MustCompile(`<.*?:SessionGuid>(.*?)<\/.*?:SessionGuid>`)
 		matches := re.FindStringSubmatch(sb)
 		if len(matches) >= 2 {
@@ -253,46 +298,8 @@ func createUniqueKeyIDSessionGuid(req *http.Request) string {
 	return ""
 }
 
-// Function that calls the function to create unique key id
-// depending on the "strategyName" in the api definition config
-func selectStrategy(rateLimitingConfig RateLimitingConfig, req *http.Request) string {
-
-	if rateLimitingConfig.RateLimiting.Active {
-		name := rateLimitingConfig.RateLimiting.Strategy.Name
-
-		switch name {
-		case "requestHeaders":
-			InfoLog("strategy to be applied: ", name)
-			keyID := createUniqueKeyIdHeaders(rateLimitingConfig, req)
-
-			return keyID
-		case "requestHeadersXRS":
-			InfoLog("strategy to be applied: ", name)
-			keyID := createUniqueKeyIdHeaders(rateLimitingConfig, req)
-
-			return keyID
-		case "sessionGuid":
-			InfoLog("strategy to be applied: ", name)
-			keyID := createUniqueKeyIDSessionGuid(req)
-
-			return keyID
-		case "otherName":
-			// Call other function based on the name
-
-		default:
-			return ("unknown strategy name: ")
-		}
-	}
-
-	InfoLog("No rate limit will be applied")
-	return ""
-}
-
-// * note that generating a struct at runtime isn't straightforward in Go due to its static typing.
-// Instead, we might want to use reflection or code generation tools to achieve this.
-// For now, we will create a map-based representation of the structure from JSON.
+// Parses the provided JSON string into a RateLimitingConfig struct
 // Returns a struct of type RateLimitingConfig that mirrors the structure of the JSON.
-// Keep in mind that using a fixed struct definition in Go is more idiomatic and recommended due to the language's strong static typing.
 func generateStructFromJSON(jsonStr string) (RateLimitingConfig, error) {
 	var jsonData RateLimitingConfig
 
@@ -307,5 +314,5 @@ func generateStructFromJSON(jsonStr string) (RateLimitingConfig, error) {
 func main() {}
 
 func init() {
-	DebugLog("--- Rate limiting plugin v4 init success! ---- ")
+	DebugLog("--- Rate limiting plugin init success! ---- ")
 }
