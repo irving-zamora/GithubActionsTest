@@ -29,7 +29,7 @@ pipeline {
                     go env -w GOPROXY=https://proxy.golang.org,direct
                     make build
                 '''
-                echo "anything"
+                echo "change anything for testing pr"
             }
         }
     }
