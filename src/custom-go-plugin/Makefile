@@ -126,7 +126,8 @@ coverage:
 # TYK_VERSION is env var defined at top of Makefile
 # PLUGIN_VERSION is a make parameter
 # ENV is a make parameter
-# usage example: make PLUGIN_VERSION=v1.0.3 ENV=te-prod bundle
+# BUNDLE_USER is a make parameter
+# usage example: make PLUGIN_VERSION=v1.0.3 ENV=te-prod BUNDLE_USER=1000 bundle
 # thought is that this will get invoked by Jenkins pipeline ???
 pluginName = RateLimitingPlugin_$(TYK_VERSION)_linux_amd64_$(PLUGIN_VERSION)-$(ENV).so
 pluginPlaceHolder = plugin_name_placeholder
@@ -136,7 +137,7 @@ go-bundle: go-build
 	echo "pluginName is $(pluginName)"
 	cp ./tyk/middleware/RateLimitingPlugin*.so ./tyk/bundle/$(pluginName)
 	sed -i 's/$(pluginPlaceHolder)/$(pluginName)/g' ./tyk/bundle/manifest.json
-	docker-compose run --rm --user=1000 --entrypoint "bundle/bundle-entrypoint.sh" tyk-gateway
+	docker-compose run --rm --user=$(BUNDLE_USER) --entrypoint "bundle/bundle-entrypoint.sh" tyk-gateway
 	sed -i 's/$(pluginName)/$(pluginPlaceHolder)/g' ./tyk/bundle/manifest.json
 
 # Cleans application files
