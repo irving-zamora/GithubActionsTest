@@ -96,7 +96,7 @@ go/src/go.mod:
 # Builds Go plugin and moves it into local Tyk instance
 .PHONY: go-build
 go-build: go/src/go.mod
-	/bin/sh -c "cd ./go/src && go mod tidy && go mod vendor"
+	/bin/sh -c "cd ./go/src && /snap/bin/go mod tidy && /snap/bin/go mod vendor"
 	docker-compose run --rm tyk-plugin-compiler RateLimitingPlugin.so _$$(date +%s)
 	mv -f ./go/src/RateLimitingPlugin*.so ./tyk/middleware/
 
@@ -120,7 +120,7 @@ coverage:
 	mv coverage.out coverage.html /tmp/test-results ; \
 	totalCoverage=`go tool cover -func=/tmp/test-results/coverage.out | grep total | grep -Eo '[0-9]+\.[0-9]+'` ; \
 	echo "Total Coverage: $$totalCoverage %" ; \
-	#rm -rf /tmp/test-results
+	rm -rf /tmp/test-results
 
 # Builds production-ready Go plugin bundle as non-root user, using Tyk Bundler tool
 # TYK_VERSION is env var defined at top of Makefile
@@ -136,7 +136,7 @@ go-bundle: go-build
 	echo "pluginName is $(pluginName)"
 	cp ./tyk/middleware/RateLimitingPlugin*.so ./tyk/bundle/$(pluginName)
 	sed -i 's/$(pluginPlaceHolder)/$(pluginName)/g' ./tyk/bundle/manifest.json
-	docker-compose run --rm --user=1000 --entrypoint "bundle/bundle-entrypoint.sh" tyk-gateway
+	docker-compose run --rm --user=$(BUNDLE_USER) --entrypoint "bundle/bundle-entrypoint.sh" tyk-gateway
 	sed -i 's/$(pluginName)/$(pluginPlaceHolder)/g' ./tyk/bundle/manifest.json
 
 # Cleans application files
