@@ -2,12 +2,12 @@ version: '3.8'
 services:
 
   tyk-plugin-compiler:
-    image: tykio/tyk-plugin-compiler:${TYK_VERSION:-v5.0.0}
+    image: tykio/tyk-plugin-compiler:${TYK_VERSION}
     volumes:
       - ./go/src:/plugin-source
 
   tyk-gateway:
-    image: tykio/tyk-gateway:${TYK_VERSION:-v5.0.0} 
+    image: tykio/tyk-gateway:${TYK_VERSION} 
     # depends_on:
     #   - tyk-mongo
     #   - tyk-redis
@@ -33,7 +33,7 @@ services:
       - tyk
 
   tyk-dashboard:
-    image: tykio/tyk-dashboard:${TYK_VERSION:-v5.0.0}
+    image: tykio/tyk-dashboard:${TYK_VERSION}
     depends_on:
       - tyk-gateway
       - tyk-pump
