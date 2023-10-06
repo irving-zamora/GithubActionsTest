@@ -95,12 +95,7 @@ go/src/go.mod:
 
 # Builds Go plugin and moves it into local Tyk instance
 .PHONY: go-build
-go-build: 
-	cd ./go/src ; \
-	go mod init tyk-plugin ; \
-	go get -d github.com/TykTechnologies/tyk@`git ls-remote https://github.com/TykTechnologies/tyk.git refs/tags/${TYK_VERSION} | awk '{print $$1;}'` ; \
-	go mod tidy ; \
-	go mod vendor
+go-build: go/src/go.mod
 	/bin/sh -c "cd ./go/src && /snap/bin/go mod tidy && /snap/bin/go mod vendor"
 	docker-compose run --rm tyk-plugin-compiler RateLimitingPlugin.so _$$(date +%s)
 	mv -f ./go/src/RateLimitingPlugin*.so ./tyk/middleware/
@@ -125,12 +120,24 @@ coverage:
 	mv coverage.out coverage.html /tmp/test-results ; \
 	totalCoverage=`go tool cover -func=/tmp/test-results/coverage.out | grep total | grep -Eo '[0-9]+\.[0-9]+'` ; \
 	echo "Total Coverage: $$totalCoverage %" ; \
-	rm -rf /tmp/test-results
+    #rm -rf /tmp/test-results
 
 # Builds production-ready Go plugin bundle as non-root user, using Tyk Bundler tool
+# TYK_VERSION is env var defined at top of Makefile
+# PLUGIN_VERSION is a make parameter
+# ENV is a make parameter
+# usage example: make PLUGIN_VERSION=v1.0.3 ENV=te-prod BUNDLE_USER=1000 bundle
+# thought is that this will get invoked by Jenkins pipeline ???
+pluginName = RateLimitingPlugin_$(TYK_VERSION)_linux_amd64_$(PLUGIN_VERSION)-$(ENV).so
+pluginPlaceHolder = plugin_name_placeholder
+
 .PHONY: go-bundle
 go-bundle: go-build
-	docker-compose run --rm --user=1000 --entrypoint "bundle/bundle-entrypoint.sh" tyk-gateway
+	echo "pluginName is $(pluginName)"
+	cp ./tyk/middleware/RateLimitingPlugin*.so ./tyk/bundle/$(pluginName)
+	sed -i 's/$(pluginPlaceHolder)/$(pluginName)/g' ./tyk/bundle/manifest.json
+	docker-compose run --rm --user=$(BUNDLE_USER) --entrypoint "bundle/bundle-entrypoint.sh" tyk-gateway
+	sed -i 's/$(pluginName)/$(pluginPlaceHolder)/g' ./tyk/bundle/manifest.json
 
 # Cleans application files
 .PHONY: go-clean
@@ -145,11 +152,11 @@ go-clean:
 # Restarts the Tyk Gateway to instantly load new iterations of the Go plugin
 .PHONY: restart-gateway
 restart-gateway:
-	docker compose restart tyk-gateway
+	docker-compose restart tyk-gateway
 
 .PHONY: docker-up-oss
 docker-up-oss:
-	docker compose -f docker compose-oss.yml up -d
+	docker-compose -f docker-compose-oss.yml up -d
 
 # Bootstrap dashboard
 .PHONY: bootstrap-oss
