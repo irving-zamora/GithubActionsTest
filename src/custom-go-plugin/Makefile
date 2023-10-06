@@ -97,7 +97,7 @@ go/src/go.mod:
 .PHONY: go-build
 go-build: go/src/go.mod
 	/bin/sh -c "cd ./go/src && /snap/bin/go mod tidy && /snap/bin/go mod vendor"
-	docker-compose run --rm tyk-plugin-compiler RateLimitingPlugin.so _$$(date +%s)
+	docker-compose run --rm tyk-plugin-compiler RateLimitingPlugin.so _$(date +%s)
 	mv -f ./go/src/RateLimitingPlugin*.so ./tyk/middleware/
 
 # Runs Go Linter
