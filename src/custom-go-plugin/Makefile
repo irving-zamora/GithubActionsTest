@@ -120,7 +120,7 @@ coverage:
 	mv coverage.out coverage.html /tmp/test-results ; \
 	totalCoverage=`go tool cover -func=/tmp/test-results/coverage.out | grep total | grep -Eo '[0-9]+\.[0-9]+'` ; \
 	echo "Total Coverage: $$totalCoverage %" ; \
-	rm -rf /tmp/test-results
+	#rm -rf /tmp/test-results
 
 # Builds production-ready Go plugin bundle as non-root user, using Tyk Bundler tool
 # TYK_VERSION is env var defined at top of Makefile
