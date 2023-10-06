@@ -96,7 +96,7 @@ go/src/go.mod:
 # Builds Go plugin and moves it into local Tyk instance
 .PHONY: go-build
 go-build: go/src/go.mod
-	/bin/sh -c "cd ./go/src && go mod tidy && go mod vendor"
+	/bin/sh -c "cd ./go/src && /snap/bin/go mod tidy && /snap/bin/go mod vendor"
 	docker-compose run --rm tyk-plugin-compiler RateLimitingPlugin.so _$$(date +%s)
 	mv -f ./go/src/RateLimitingPlugin*.so ./tyk/middleware/
 
@@ -120,13 +120,13 @@ coverage:
 	mv coverage.out coverage.html /tmp/test-results ; \
 	totalCoverage=`go tool cover -func=/tmp/test-results/coverage.out | grep total | grep -Eo '[0-9]+\.[0-9]+'` ; \
 	echo "Total Coverage: $$totalCoverage %" ; \
-	#rm -rf /tmp/test-results
+	rm -rf /tmp/test-results
 
 # Builds production-ready Go plugin bundle as non-root user, using Tyk Bundler tool
 # TYK_VERSION is env var defined at top of Makefile
 # PLUGIN_VERSION is a make parameter
 # ENV is a make parameter
-# usage example: make PLUGIN_VERSION=v1.0.3 ENV=te-prod bundle
+# usage example: make PLUGIN_VERSION=v1.0.3 ENV=te-prod BUNDLE_USER=1000 bundle
 # thought is that this will get invoked by Jenkins pipeline ???
 pluginName = RateLimitingPlugin_$(TYK_VERSION)_linux_amd64_$(PLUGIN_VERSION)-$(ENV).so
 pluginPlaceHolder = plugin_name_placeholder
