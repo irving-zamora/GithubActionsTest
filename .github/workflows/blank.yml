@@ -1,4 +1,4 @@
-name: Build, Bundle, Release Go Plugin
+name: Build, Test, Comment PR Coverage Go Plugin
 
 on:
   push:
@@ -35,53 +35,35 @@ jobs:
     - name: Run Tests and Generate Coverage
       continue-on-error: true
       run: |
+        go install github.com/jstemmer/go-junit-report@latest
         cd ./src/custom-go-plugin/go/src/
         go test -v -coverprofile=coverage.txt ./...
-        go test -v ./... | go-junit-report > junit-report.xml
+
+    - name: Create Test Coverage Files
+      run: |
+        cd ./src/custom-go-plugin/go/src/
         go tool cover -func=coverage.txt > coverage_summary.txt
-        
-    - name: Upload Go test results
-      uses: actions/upload-artifact@v3
-      with:
-        name: Go-results-${{ matrix.go-version }}
-        path: TestResults-${{ matrix.go-version }}.json
-          
+        go tool cover -html=coverage.txt -o coverage.html
+        go tool cover -func=coverage.txt > junit-report.xml
+       
     - name: Upload Artifacts
       uses: actions/upload-artifact@v2
       with:
         name: test-coverage
         path: |
+          /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage_summary.txt
           /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage.txt
           /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage.html
           /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/junit-report.xml
 
-    - name: Install go-junit-report
-      run: go get -u github.com/jstemmer/go-junit-report
-
-    - name: Run Tests and Generate JUnit XML Report
-      continue-on-error: true
-      run: |
-        cd ./src/custom-go-plugin/go/src/
-        go test -v -json ./... > test-output.json
-        go-junit-report < test-output.json > test-report.xml
-
-    - name: Download go-junit-report
-      run: |
-        wget https://github.com/jstemmer/go-junit-report/releases/download/v1.5.2/junit-report-linux-amd64 -O junit-report
-        chmod +x junit-report
-        mv junit-report /usr/local/bin/
-
-    - name: Comment on Pull Request with Coverage Report and JUnit XML
+    - name: Add Coverage PR Comment
       uses: marocchino/sticky-pull-request-comment@v2
+      if: github.event_name == 'pull_request'
       with:
-        message: |
-          Test Results:
-       
-          [View Function-Level Coverage Report](artifact:coverage-func.html)
-          [View JUnit XML Report](artifact:test-report.xml)
-        
-    - name: Upload JUnit XML Report
-      uses: actions/upload-artifact@v2
-      with:
-        name: test-report
-        path: test-report.xml
+        append: true
+        recreate: true
+        message: This is your comment message.
+        path: |
+          /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage_summary.txt
+          /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/coverage.txt
+          /home/runner/work/GithubActionsTest/GithubActionsTest/src/custom-go-plugin/go/src/junit-report.xml
