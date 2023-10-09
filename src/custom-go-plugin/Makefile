@@ -103,7 +103,7 @@ go-build: go/src/go.mod
 # Builds Go plugin and moves it into local Tyk instance Run this from Jenkins only
 .PHONY: go-build-jenkins
 go-build-jenkins: go/src/go.mod
-	/bin/sh -c "cd ./go/src && /var/lib/jenkins/tools/org.jenkinsci.plugins.golang.GolangInstallation/1.20/bin/go mod tidy && /var/lib/jenkins/tools/org.jenkinsci.plugins.golang.GolangInstallation/1.20/bin/go mod vendor"
+	/bin/sh -c "cd ./go/src && go mod tidy && go mod vendor"
 	docker-compose run --rm tyk-plugin-compiler RateLimitingPlugin.so _$$(date +%s)
 	mv -f ./go/src/RateLimitingPlugin*.so ./tyk/middleware/
 
