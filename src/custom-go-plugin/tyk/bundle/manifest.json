@@ -1,6 +1,6 @@
 {
   "file_list": [
-    "RateLimitingPlugin.so"
+    "plugin_name_placeholder"
   ],
   "custom_middleware": {
     "pre": [],
@@ -9,7 +9,7 @@
     "auth_check": {
       "disabled": false,
       "name": "SetRateLimit",
-      "path": "RateLimitingPlugin.so",
+      "path": "plugin_name_placeholder",
       "require_session": true,
       "raw_body_only": false
     },
