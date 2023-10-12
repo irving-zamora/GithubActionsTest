@@ -1,9 +1,11 @@
 pipeline {
     agent any
+
     environment {
         GO_VERSION = '1.20' 
         TYK_VERSION = 'v5.0.3'
     }
+    
     tools {
         go '1.20'
     }
@@ -12,9 +14,9 @@ pipeline {
         stage('Clean Up') {
             steps {
                 deleteDir()
-                echo "cleaned"
             }
         }
+        
         stage('Checkout code') {
             steps {
                 script {
@@ -22,15 +24,119 @@ pipeline {
                 }
             }
         }
+        
         stage('Build Go Plugin') {
             steps {
                 sh '''
                     cd GithubActionsTest/src/custom-go-plugin
-                    go env -w GOPROXY=https://proxy.golang.org,direct
                     make build
                 '''
-                echo "change anything for testing pr"
             }
         }
+
+        stage('Run Tests') {
+            steps {
+                sh '''
+                    cd GithubActionsTest/src/custom-go-plugin
+                    make test
+                '''
+            }
+        }
+        
+        stage('Generate Coverage') {
+            steps {
+                script {
+                    sh '''
+                        cd GithubActionsTest/src/custom-go-plugin
+                        make coverage
+                    '''
+                    archiveArtifacts artifacts: 'GithubActionsTest/src/custom-go-plugin/go/src/coverage.out', allowEmptyArchive: true
+                }
+            }
+        }
+        
+        stage('Upload Artifacts and check Coverage Threshold') {
+            steps {
+                script {
+                    sh '''
+                        cd GithubActionsTest/src/custom-go-plugin/go/src/
+                        go tool cover -func=coverage.out > coverage_summary.txt
+                    '''
+                }
+                archiveArtifacts artifacts: 'GithubActionsTest/src/custom-go-plugin/go/src/coverage.html, GithubActionsTest/src/custom-go-plugin/go/src/coverage_summary.txt', allowEmptyArchive: true
+            }
+            post {
+                success {
+                    script {
+                        checkCoverageThreshold()
+                        echo "Coverage above threshold of 80%"
+                    }
+                }
+            }
+        }
+        
+        stage('Set up Tyk cli') {
+            steps {
+                sh '''
+                    cd GithubActionsTest/src/custom-go-plugin/go/src
+                    go get -d github.com/TykTechnologies/tyk-cli
+                    go mod tidy ; \
+	                go mod vendor
+                '''
+            }
+        }
+        
+        stage('Bundle') {
+            steps {
+                sh '''
+                    cd GithubActionsTest/src/custom-go-plugin
+                    make PLUGIN_VERSION=v1.0.3 ENV=dev BUNDLE_USER=root bundle
+                '''
+                archiveArtifacts artifacts: 'GithubActionsTest/src/custom-go-plugin/tyk/bundle/bundle.zip', allowEmptyArchive: true
+            }
+        }
+        
+        stage('Upload bundle to S3') {
+            steps {
+                script{
+                    sh '''
+                        cd GithubActionsTest/src/custom-go-plugin/go/src
+                        go get -d github.com/TykTechnologies/mserv
+                        
+                        wget https://github.com/TykTechnologies/mserv/releases/download/v0.9.9-beta.1/mservctl.linux.amd64
+                        ls
+                        pwd
+                        
+                        chmod +x mservctl.linux.amd64
+                    '''
+                    def mservOutput = sh(
+                            script: '/var/lib/jenkins/workspace/Docker\\ simple/GithubActionsTest/src/custom-go-plugin/go/src/mservctl.linux.amd64 --config GithubActionsTest/src/custom-go-plugin/go/src/mserv.yaml push GithubActionsTest/src/custom-go-plugin/tyk/bundle/bundle.zip',
+                            returnStdout: true
+                        ).trim()
+                    
+                    MSERV_ID = "d793c617-957b-445a-8f4c-da96ef0199e7"
+                }
+            }
+        }
+    }
+}
+
+def checkCoverageThreshold() {
+    def coverageThreshold = 80.0  // Define your desired coverage threshold
+    def coverageReport = readFile('GithubActionsTest/src/custom-go-plugin/go/src/coverage_summary.txt')
+
+    /// Extract the coverage percentage from the last line of the report
+    def lastLine = coverageReport.readLines().last()
+    def matcher = lastLine =~ /(\d+\.\d+)%/
+    
+    ///split it by tabs, and extract the coverage percentage from the last element after splitting. 
+    if (matcher) {
+        def coveragePercentage = lastLine[matcher.start(1)..matcher.end(1)-1].toDouble()
+        
+        if (coveragePercentage < coverageThreshold) {
+            error("Coverage below threshold (${coveragePercentage}% < ${coverageThreshold}%), stopping the pipeline.")
+        }
+    } else {
+        error("Failed to extract coverage percentage from the report.")
     }
 }
