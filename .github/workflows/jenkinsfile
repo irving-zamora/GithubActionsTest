@@ -114,6 +114,15 @@ pipeline {
                             returnStdout: true
                         ).trim()
                     
+                    echo "MSERV output: ${mservOutput}"
+                    
+                     def output = sh(
+                            script: 'ls -al',
+                            returnStdout: true
+                        ).trim()
+                    
+                    echo "output: ${output}"
+                    
                     MSERV_ID = "d793c617-957b-445a-8f4c-da96ef0199e7"
                 }
             }
