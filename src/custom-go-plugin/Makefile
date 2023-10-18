@@ -4,7 +4,7 @@
 #
 ###############################################################################
 
-export TYK_VERSION := v5.0.1
+export TYK_VERSION := v5.0.3
 
 # Default task: sets up development environment
 install: up build
@@ -96,14 +96,7 @@ go/src/go.mod:
 # Builds Go plugin and moves it into local Tyk instance
 .PHONY: go-build
 go-build: go/src/go.mod
-	/bin/sh -c "cd ./go/src && /usr/local/go/bin/go mod tidy && /usr/local/go/bin/go mod vendor"
-	docker-compose run --rm tyk-plugin-compiler RateLimitingPlugin.so _$$(date +%s)
-	mv -f ./go/src/RateLimitingPlugin*.so ./tyk/middleware/
-
-# Builds Go plugin and moves it into local Tyk instance Run this from Jenkins only
-.PHONY: go-build-jenkins
-go-build-jenkins: go/src/go.mod
-	/bin/sh -c "cd ./go/src && /usr/local/go/bin/gogo mod tidy && /usr/local/go/bin/gogo mod vendor"
+	/bin/sh -c "cd ./go/src && go mod tidy && go mod vendor"
 	docker-compose run --rm tyk-plugin-compiler RateLimitingPlugin.so _$$(date +%s)
 	mv -f ./go/src/RateLimitingPlugin*.so ./tyk/middleware/
 
@@ -113,25 +106,27 @@ lint:
 
 # Runs Go unit tests
 test:
-	/bin/sh -c "cd ./go/src && /usr/local/go/bin/go test"
+	/bin/sh -c "cd ./go/src && go test"
 
 # Run Go test coverage
 coverage:
 	mkdir -p /tmp/test-results ; \
 	cd ./go/src ; \
-	/usr/local/go/bin/go test ./... -coverprofile coverage.out -covermode count ; \
+	go test ./... -coverprofile coverage.out -covermode count ; \
 	grep -v tyk-plugin/tyk_util.go coverage.out > coverage.out.tmp ; \
 	mv coverage.out.tmp coverage.out ; \
-	/usr/local/go/bin/go tool cover -func coverage.out ; \
-	/usr/local/go/bin/go tool cover -html=coverage.out -o coverage.html ; \
+	go tool cover -func coverage.out ; \
+	go tool cover -html=coverage.out -o coverage.html ; \
 	mv coverage.out coverage.html /tmp/test-results ; \
-	totalCoverage=`/usr/local/go/bin/go tool cover -func=/tmp/test-results/coverage.out | grep total | grep -Eo '[0-9]+\.[0-9]+'` ; \
+	totalCoverage=`go tool cover -func=/tmp/test-results/coverage.out | grep total | grep -Eo '[0-9]+\.[0-9]+'` ; \
 	echo "Total Coverage: $$totalCoverage %" ; \
+	# rm -rf /tmp/test-results
 
 # Builds production-ready Go plugin bundle as non-root user, using Tyk Bundler tool
 # TYK_VERSION is env var defined at top of Makefile
 # PLUGIN_VERSION is a make parameter
 # ENV is a make parameter
+# BUNDLE_USER is a make parameter
 # usage example: make PLUGIN_VERSION=v1.0.3 ENV=te-prod BUNDLE_USER=1000 bundle
 # thought is that this will get invoked by Jenkins pipeline ???
 pluginName = RateLimitingPlugin_$(TYK_VERSION)_linux_amd64_$(PLUGIN_VERSION)-$(ENV).so
