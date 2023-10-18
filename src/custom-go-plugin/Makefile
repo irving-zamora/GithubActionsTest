@@ -119,13 +119,13 @@ test:
 coverage:
 	mkdir -p /tmp/test-results ; \
 	cd ./go/src ; \
-	go test ./... -coverprofile coverage.out -covermode count ; \
+	/usr/local/go/bin/go test ./... -coverprofile coverage.out -covermode count ; \
 	grep -v tyk-plugin/tyk_util.go coverage.out > coverage.out.tmp ; \
 	mv coverage.out.tmp coverage.out ; \
-	go tool cover -func coverage.out ; \
-	go tool cover -html=coverage.out -o coverage.html ; \
+	/usr/local/go/bin/go tool cover -func coverage.out ; \
+	/usr/local/go/bin/go tool cover -html=coverage.out -o coverage.html ; \
 	mv coverage.out coverage.html /tmp/test-results ; \
-	totalCoverage=`go tool cover -func=/tmp/test-results/coverage.out | grep total | grep -Eo '[0-9]+\.[0-9]+'` ; \
+	totalCoverage=`/usr/local/go/bin/go tool cover -func=/tmp/test-results/coverage.out | grep total | grep -Eo '[0-9]+\.[0-9]+'` ; \
 	echo "Total Coverage: $$totalCoverage %" ; \
 	# rm -rf /tmp/test-results
 
