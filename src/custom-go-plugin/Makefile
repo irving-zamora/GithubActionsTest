@@ -4,7 +4,7 @@
 #
 ###############################################################################
 
-export TYK_VERSION := v5.0.3
+export TYK_VERSION := v5.0.1
 
 # Default task: sets up development environment
 install: up build
