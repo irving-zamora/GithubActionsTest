@@ -79,13 +79,13 @@ pipeline {
                         }
                     }
                 }
-
-                /*stage('Upload Artifacts and check Coverage Threshold') {
+                
+                stage('Upload Artifacts and check Coverage Threshold') {
                     steps {
                         script {
                             sh '''
                                 cd GithubActionsTest/src/custom-go-plugin/go/src/
-                                /usr/local/go/bin/go tool cover -func=coverage.out > coverage_summary.txt
+                                go tool cover -func=/tmp/test-results/coverage.out > coverage_summary.txt
                             '''
                         }
                         archiveArtifacts artifacts: 'GithubActionsTest/src/custom-go-plugin/go/src/coverage.html, GithubActionsTest/src/custom-go-plugin/go/src/coverage_summary.txt', allowEmptyArchive: true
@@ -98,8 +98,7 @@ pipeline {
                             }
                         }
                     }
-
-                }*/
+                }
 
                 stage('Set up Tyk cli') {
                     steps {
