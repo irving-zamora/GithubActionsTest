@@ -15,7 +15,6 @@ pipeline {
 
         string(name: 'RELEASE_BRANCH', defaultValue: 'release-6.x', description: 'Input the release branch that has been configured in Github')
     }
-    
     environment {
         // just here as an example
         TEST_ENV = """${sh(
@@ -23,11 +22,12 @@ pipeline {
             script: 'exit 1'
         )}"""
 
-        GO_VERSION = '1.20' 
-        TYK_VERSION = 'v5.0.3'
+        GO_VERSION = '1.20'
+        TYK_VERSION = 'v5.0.1'
 
-        tykApiKeyEnv = credentials("TYK_API_KEY_${SELECTED_ENV}")
-        tykApiDefEndpointURL = credentials("TYK_APIDEF_ENDPOINT_URL_${SELECTED_ENV.toUpperCase()}")
+        tykApiKeyEnv = '8215f2e46f0f453c6638a518b8bb56be'
+        PATH = "/usr/local/go/bin:$PATH"
+    //tykApiDefEndpointURL = credentials("TYK_APIDEF_ENDPOINT_URL_${SELECTED_ENV.toUpperCase()}")
     }
 
     stages {
@@ -43,14 +43,15 @@ pipeline {
         stage('Clone repo') {
             steps {
                 script {
-                    sh 'git clone https://github.com/Omnitracs/GithubActionsTest.git'
+                    sh 'git clone https://github.com/irving-zamora/GithubActionsTest.git'
+
+                    sh 'go version'
                 }
-            }  
+            }
         }
-        
         stage('Custom Go Plugin') {
             stages {
-                stage ('build') {
+                stage('build') {
                     steps {
                         sh '''
                             cd GithubActionsTest/src/custom-go-plugin
@@ -59,7 +60,7 @@ pipeline {
                     }
                 }
 
-                stage ('unit test') {
+                stage('Run Tests') {
                     steps {
                         sh '''
                             cd GithubActionsTest/src/custom-go-plugin
@@ -67,7 +68,6 @@ pipeline {
                         '''
                     }
                 }
-
                 stage('Generate Coverage') {
                     steps {
                         script {
@@ -80,12 +80,12 @@ pipeline {
                     }
                 }
 
-                stage('Upload Artifacts and check Coverage Threshold') {
+                /*stage('Upload Artifacts and check Coverage Threshold') {
                     steps {
                         script {
                             sh '''
                                 cd GithubActionsTest/src/custom-go-plugin/go/src/
-                                go tool cover -func=coverage.out > coverage_summary.txt
+                                /usr/local/go/bin/go tool cover -func=coverage.out > coverage_summary.txt
                             '''
                         }
                         archiveArtifacts artifacts: 'GithubActionsTest/src/custom-go-plugin/go/src/coverage.html, GithubActionsTest/src/custom-go-plugin/go/src/coverage_summary.txt', allowEmptyArchive: true
@@ -99,11 +99,10 @@ pipeline {
                         }
                     }
 
-                }
+                }*/
 
                 stage('Set up Tyk cli') {
                     steps {
-                        
                         sh '''
                             cd GithubActionsTest/src/custom-go-plugin/go/src
                             go get -d github.com/TykTechnologies/tyk-cli
@@ -115,7 +114,6 @@ pipeline {
 
                 stage('Bundle') {
                     steps {
-                
                         sh '''
                             cd GithubActionsTest/src/custom-go-plugin
                             make PLUGIN_VERSION=v1.0.3 ENV=${SELECTED_ENV} BUNDLE_USER=root bundle
@@ -124,101 +122,70 @@ pipeline {
                     }
                 }
             }
-            
         }
-        
         stage('Process Api Configs') {
             // this needs to be a loop based on api config in a specific repo dir -- once per api config for selected env
             steps {
                 echo 'Process Api Configs... this will take an api template and will merge with the appropriate api/env override json file and produced the merged api config artifacts'
                 script {
-
-                    
-                    echo tykApiDefEndpointURL                 
-                    
+                    //echo tykApiDefEndpointURL
                     //depending on the branch selected we assing api key and url
-                    if (SELECTED_ENV=="dev"){
+                    if (SELECTED_ENV == 'dev') {
                         env.ENDPOINT_URL = 'https://dusty-colt-adm.aws-use1.cloud-ara.tyk.io/api/apis'
-                    }else if (SELECTED_ENV=="te-prod"){
-                        env.ENDPOINT_URL = 'https://isolated-crab-adm.aws-use1.cloud-ara.tyk.io/api/apis'    
+                    }else if (SELECTED_ENV == 'te-prod') {
+                        env.ENDPOINT_URL = 'https://isolated-crab-adm.aws-use1.cloud-ara.tyk.io/api/apis'
                     }
-                                        
-                    def path = 'iac/api-definitions/base'
+                    def path = '/var/lib/jenkins/workspace/Final_test/GithubActionsTest/iac/api-definitions/base'
                     def filesList = sh(script: "find ${path} -type f", returnStdout: true).trim().split('\n')
-                    
                     //Declaring a jsonarray to store all the jsons loads for the put or post request
                     def jsonArrayPUT = []
                     def jsonArrayPOST = []
 
                     //Loop to look into all files in base folder
                     filesList.each { file ->
-                        echo " - ${file}"
-
+                        echo "your file is: - ${file}"
                         def fileName = file.tokenize('/').last()
                         def apiName = fileName.substring(0, fileName.lastIndexOf('.'))
 
-                        echo apiName
-                                                                     
-                        //Reading the file in base folder                        
+                        echo "Derived api name: ${apiName}"
+                        //Reading the file in base folder
                         def jsonText = readFile file
                         //Reading the file in env-overrides folder
-                        def path2nd = "iac/api-definitions/env-overrides/${apiName}-"+SELECTED_ENV+'.json'
+                        def path2nd = "/var/lib/jenkins/workspace/Final_test/GithubActionsTest/iac/api-definitions/env-overrides/${apiName}-" + SELECTED_ENV + '.json'
                         def jsonText2 = readFile path2nd
-                                                
                         //Run the command jq to merge dynamically
                         def mergedJson = sh(script: """
-                            echo '${jsonText}' | jq --slurpfile replacement '${path2nd}' '. * \$replacement[0]' 
+                            echo '${jsonText}' | jq --slurpfile replacement '${path2nd}' '. * \$replacement[0]'
                         """, returnStdout: true).trim()
 
                         //GET REQUEST
-                        echo "enter to the GET request"
-                        
-                        def response = sh(script: 'curl --location ' +'"'+ env.ENDPOINT_URL +'?q='+apiName+'" '+' --header "authorization: ${tykApiKeyEnv}"', returnStdout: true).trim()
+                        echo 'enter to the GET request'
+                        def response = sh(script: 'curl --location ' + '"'+ env.ENDPOINT_URL +'?q='+apiName+'" ' + ' --header "authorization: ${tykApiKeyEnv}"', returnStdout: true).trim()
 
-                        echo "Exiting GET request"
+                        echo 'Exiting GET request'
 
                         def parsedJson = new groovy.json.JsonSlurperClassic().parseText(response)
 
-                        env.apiID = "";
-                        env.boolResponse = false;//This var works to know if we have a valid response
-                        if (parsedJson.apis.size()>0) {
-                            env.boolResponse = true;
-
+                        env.apiID = ''
+                        if (parsedJson.apis.size() > 0) {
                             env.apiID = parsedJson.apis[0].api_definition.id
-                            
-                            // Convert jsonText to JSON object                            
-                            def parsedJsonText = new groovy.json.JsonSlurperClassic().parseText(jsonText2)
-
-                            //We fusion the second json into the json response from the GET request
-                            def apiDefinition = parsedJson.apis[0].api_definition
-                            apiDefinition.putAll(parsedJsonText.api_definition)    
-                            def apiDefinitionName = 'api_definition'
-                            def tempJson = parsedJson.apis[0]
-
-                            //this variable only stores the api_definition property, this is the only one we need to
-                            //send in the body for our PUT request
-                            def apiDefinitionJson = [("$apiDefinitionName"): tempJson[apiDefinitionName]]                            
-                            
-                            jsonArrayPUT.add(apiDefinitionJson)
-                            
-                            echo "array PUT"
-                        }else{
+                            jsonArrayPUT.add(mergedJson)
+                            echo 'array PUT'
+                        }else {
                             jsonArrayPOST.add(mergedJson)
-                            echo "array POST"
+                            echo 'array POST'
                         }
-
-                        
                     }
                     //Saving the arrays in environment variables
-                    env.jsonArrayPOSTGlobal = new groovy.json.JsonBuilder(jsonArrayPOST).toPrettyString()                                        
-                    env.jsonArrayPUTGlobal = new groovy.json.JsonBuilder(jsonArrayPUT).toPrettyString()                   
+                    env.jsonArrayPOSTGlobal = new groovy.json.JsonBuilder(jsonArrayPOST).toPrettyString()
+                    env.jsonArrayPUTGlobal = new groovy.json.JsonBuilder(jsonArrayPUT).toPrettyString()
                 }
             }
         }
 
         stage('Confirm Deployment') {
             when {
-                expression {params.RELEASE_BRANCH != 'develop'}
+                expression { params.RELEASE_BRANCH != 'develop' }
             }
             steps {
                 input('Do you want to proceed with deployment?')
@@ -226,151 +193,96 @@ pipeline {
             }
         }
 
-        stage('Upload bundle to S3') {
-            steps {
-                script{
-                    sh '''
-                        cd GithubActionsTest/src/custom-go-plugin/go/src
-                        go get -d github.com/TykTechnologies/mserv
-                        
-                        wget https://github.com/TykTechnologies/mserv/releases/download/v0.9.9-beta.1/mservctl.linux.amd64
-                        ls
-                        pwd
-                        
-                        chmod +x mservctl.linux.amd64
-                    '''
-                    def mservOutput = sh(
-                            script: 'GithubActionsTest/src/custom-go-plugin/go/src/mservctl.linux.amd64 --config GithubActionsTest/src/custom-go-plugin/go/src/mserv.yaml push GithubActionsTest/src/custom-go-plugin/tyk/bundle/bundle.zip >>result.txt 2>&1',
-                            returnStdout: true
-                        ).trim()
-
-                    result = readFile('result.txt').trim()
-
-                    // Extract the "ID" value using regular expressions
-                    def idMatch = result =~ /ID: ([\w-]+)/
-
-                    if (idMatch) {
-                        BUNDLE_ID = idMatch[0][1].trim()
-                        echo "ID: ${BUNDLE_ID}"
-                    } else {
-                        error "Failed to extract the ID from mserv output."
-                    }  
-                }
-            }
-        }
-        
         stage('Deployment') {
             stages {
-                stage('deploy') {
-                    stages {
-                        // how to deal with a deployment rollback scenario if something fails?
-                        stage('deploy plugin') {
-                            steps {
-                                script{
-                                    sh '''
-                                        cd GithubActionsTest/src/custom-go-plugin/go/src
-                                        go get -d github.com/TykTechnologies/mserv
-                                        
-                                        wget https://github.com/TykTechnologies/mserv/releases/download/v0.9.9-beta.1/mservctl.linux.amd64
-                                        ls
-                                        pwd
-                                        
-                                        chmod +x mservctl.linux.amd64
-                                    '''
-                                    def mservOutput = sh(
-                                            script: 'GithubActionsTest/src/custom-go-plugin/go/src/mservctl.linux.amd64 --config GithubActionsTest/src/custom-go-plugin/go/src/mserv.yaml push GithubActionsTest/src/custom-go-plugin/tyk/bundle/bundle.zip >>result.txt 2>&1',
-                                            returnStdout: true
-                                        ).trim()
-
-                                    result = readFile('result.txt').trim()
-
-                                    // Extract the "ID" value using regular expressions
-                                    def idMatch = result =~ /ID: ([\w-]+)/
-
-                                    if (idMatch) {
-                                        env.BUNDLE_ID = idMatch[0][1].trim()
-                                        echo "ID: ${env.BUNDLE_ID}"
-                                    } else {
-                                        error "Failed to extract the ID from mserv output."
-                                    }
-
-                                    //echo 'push bundled plugin artifact to AWS S3'
-                                    //env.custom_middleware_bundle = "kunybg9283"
-                                }
-                            }
+                // how to deal with a deployment rollback scenario if something fails?
+                stage('Upload bundle to S3') {
+                    steps {
+                        script{
+                            sh '''
+                                cd GithubActionsTest/src/custom-go-plugin/go/src
+                                go get -d github.com/TykTechnologies/mserv
+                                
+                                wget https://github.com/TykTechnologies/mserv/releases/download/v0.9.9-beta.1/mservctl.linux.amd64
+                                ls
+                                pwd
+                                
+                                chmod +x mservctl.linux.amd64
+                            '''
+                            def mservOutput = sh(
+                                    script: '/var/lib/jenkins/workspace/Final_test/GithubActionsTest/src/custom-go-plugin/go/src/mservctl.linux.amd64 --config GithubActionsTest/src/custom-go-plugin/go/src/mserv.yaml push GithubActionsTest/src/custom-go-plugin/tyk/bundle/bundle.zip >>result.txt 2>&1',
+                                    returnStdout: true
+                                ).trim()
+                            
+                            result = readFile('result.txt').trim()
+                            
+                            // Extract the "ID" value using regular expressions
+                            def idMatch = result =~ /ID: ([\w-]+)/
+                            
+                            if (idMatch) {
+                                env.BUNDLE_ID = idMatch[0][1].trim()
+                                echo "ID: ${env.BUNDLE_ID}"
+                            } else {
+                                error "Failed to extract the ID from mserv output."
+                            }  
                         }
+                    }
+                }
 
-                        stage('deploy api configs') {
-                            steps {
-                                echo 'deploy merged api config to the correct gateway'
+                stage('deploy api configs') {
+                    steps {
+                        echo 'deploy merged api config to the correct gateway'
 
-                                script{
-                                    echo "hello script"
-                                                                
-                                    def jsonArray = new groovy.json.JsonSlurperClassic().parseText(env.jsonArrayPUTGlobal)
-                                    def jsonArray2 = new groovy.json.JsonSlurperClassic().parseText(env.jsonArrayPOSTGlobal)
-
-                                    if (jsonArray instanceof List && !jsonArray.isEmpty()) {
-                                        
-                                        def jsonPUT
-                                        for (item in jsonArray) {
-                                                                                        
-                                            //Editing bundle ID in our json                                            
-                                            item.api_definition.custom_middleware_bundle = env.BUNDLE_ID
-
-                                            jsonPUT = new groovy.json.JsonBuilder(item).toPrettyString()
-
-                                            def response2 = sh(script: """
-                                                curl --location --request PUT "${env.ENDPOINT_URL}/${env.apiID}" --header 'Content-Type: application/json' --header "authorization: ${tykApiKeyEnv}" --data '${jsonPUT}'
+                        script {
+                            echo 'hello script'
+                            def jsonArrayForPUTRequests = new groovy.json.JsonSlurperClassic().parseText(env.jsonArrayPUTGlobal)
+                            def jsonArrayForPOSTRequests = new groovy.json.JsonSlurperClassic().parseText(env.jsonArrayPOSTGlobal)
+                            if (jsonArrayForPUTRequests instanceof List && !jsonArrayForPUTRequests.isEmpty()) {
+                                for (item in jsonArrayForPUTRequests) {
+                                    //Using regular expressions because this is json string
+                                    def regexPattern = "\"custom_middleware_bundle\": \"[^\"]*\""
+                                    item = item.replaceAll(regexPattern, "\"custom_middleware_bundle\": \"$env.BUNDLE_ID\"")
+                                    def response2 = sh(script: """
+                                                curl --location --request PUT "${env.ENDPOINT_URL}/${env.apiID}" --header 'Content-Type: application/json' --header "authorization: ${tykApiKeyEnv}" --data '${item}'
                                             """, returnStatus: true)
-                                                                                                                                                                               
-                                            if (response2 == 0) {
-                                                echo "Success."
+        
+                                    if (response2 == 0) {
+                                        echo 'Success.'
                                             } else {
-                                                error "Error. Response code: ${response2}"
-                                            }
-                                            
-                                        }
-                                    }/* else {
-                                        error "This is not a Json array."
-                                    }*/
-                                    
+                                        error "Error. Response code: ${response2}"
+                                    }
+                                }
+                            }
 
-                                    if (jsonArray2 instanceof List && !jsonArray2.isEmpty()) {
-                                        
-                                        for (item in jsonArray2) {
-                                            //Using regular expressions because this is json string
-                                            def regexPattern = "\"custom_middleware_bundle\": \"[^\"]*\""
-                                            item = item.replaceAll(regexPattern, "\"custom_middleware_bundle\": \"$env.BUNDLE_ID\"")
-                                            
-                                            def response2 = sh(script: """
+                            if (jsonArrayForPOSTRequests instanceof List && !jsonArrayForPOSTRequests.isEmpty()) {
+                                for (item in jsonArrayForPOSTRequests) {
+                                    //Using regular expressions because this is json string
+                                    def regexPattern = "\"custom_middleware_bundle\": \"[^\"]*\""
+                                    item = item.replaceAll(regexPattern, "\"custom_middleware_bundle\": \"$env.BUNDLE_ID\"")
+                                    def response2 = sh(script: """
                                                 curl --location "${env.ENDPOINT_URL}" --header 'Content-Type: application/json' --header "authorization: ${tykApiKeyEnv}" --data '${item}'
-                                            """, returnStatus: true)                                           
-                                            
-                                            echo "hello"
-                                            if (response2 == 0) {
-                                                echo "Success."
-                                            } else {
-                                                error "Error. Response code: ${response2}"
-                                            }
-                                        }  
+                                            """, returnStatus: true)
+                                    echo "response2: ${response2}"
+                                    if (response2 == 0) {
+                                        echo "Success."
+                                    } else {
+                                        error "Error. Response code: ${response2}"
                                     }
                                 }
                             }
                         }
+                    }
+                }
 
-                        stage('deploy api docs') {
-                            steps {
-                                echo 'deploy api doc to dev portal -- this needs to be thought through more'
-                            }
-                        }
+                stage('deploy api docs') {
+                    steps {
+                        echo 'deploy api doc to dev portal -- this needs to be thought through more'
                     }
                 }
             }
         }
     }
 }
-
 
 def checkCoverageThreshold() {
     def coverageThreshold = 80.0  // Define your desired coverage threshold
@@ -380,14 +292,14 @@ def checkCoverageThreshold() {
     def lastLine = coverageReport.readLines().last()
     def matcher = lastLine =~ /(\d+\.\d+)%/
 
-    ///split it by tabs, and extract the coverage percentage from the last element after splitting. 
+    ///split it by tabs, and extract the coverage percentage from the last element after splitting.
     if (matcher) {
-        def coveragePercentage = lastLine[matcher.start(1)..matcher.end(1)-1].toDouble()
+        def coveragePercentage = lastLine[matcher.start(1)..matcher.end(1) - 1].toDouble()
 
         if (coveragePercentage < coverageThreshold) {
             error("Coverage below threshold (${coveragePercentage}% < ${coverageThreshold}%), stopping the pipeline.")
         }
     } else {
-        error("Failed to extract coverage percentage from the report.")
+        error('Failed to extract coverage percentage from the report.')
     }
 }
