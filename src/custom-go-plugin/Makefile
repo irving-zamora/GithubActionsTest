@@ -14,6 +14,9 @@ install: up build
 # Builds the Go plugin
 build: go-build restart-gateway
 
+# Builds the Go plugin without restarting the container
+build-iac: go-build
+
 # Builds production-ready plugin bundle
 bundle: go-bundle restart-gateway
 
@@ -96,6 +99,12 @@ go/src/go.mod:
 # Builds Go plugin and moves it into local Tyk instance
 .PHONY: go-build
 go-build: go/src/go.mod
+	/bin/sh -c "cd ./go/src && go mod tidy && go mod vendor"
+	docker-compose run --rm tyk-plugin-compiler RateLimitingPlugin.so _$$(date +%s)
+	mv -f ./go/src/RateLimitingPlugin*.so ./tyk/middleware/
+
+.PHONY: go-build-iac
+go-build-iac: go/src/go.mod
 	/bin/sh -c "cd ./go/src && go mod tidy && go mod vendor"
 	docker-compose run --rm tyk-plugin-compiler RateLimitingPlugin.so _$$(date +%s)
 	mv -f ./go/src/RateLimitingPlugin*.so ./tyk/middleware/
