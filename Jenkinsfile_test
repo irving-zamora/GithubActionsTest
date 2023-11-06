@@ -26,7 +26,6 @@ pipeline {
         TYK_VERSION = 'v5.0.1'
 
         tykApiKeyEnv = '8215f2e46f0f453c6638a518b8bb56be'
-        PATH = "/usr/local/go/bin:$PATH"
     //tykApiDefEndpointURL = credentials("TYK_APIDEF_ENDPOINT_URL_${SELECTED_ENV.toUpperCase()}")
     }
 
