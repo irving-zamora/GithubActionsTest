@@ -103,12 +103,6 @@ go-build: go/src/go.mod
 	docker-compose run --rm tyk-plugin-compiler RateLimitingPlugin.so _$$(date +%s)
 	mv -f ./go/src/RateLimitingPlugin*.so ./tyk/middleware/
 
-.PHONY: go-build-iac
-go-build-iac: go/src/go.mod
-	/bin/sh -c "cd ./go/src && go mod tidy && go mod vendor"
-	docker-compose run --rm tyk-plugin-compiler RateLimitingPlugin.so _$$(date +%s)
-	mv -f ./go/src/RateLimitingPlugin*.so ./tyk/middleware/
-
 # Runs Go Linter
 lint:
 	/bin/sh -c "docker run --rm -v ${PWD}/go/src:/app -v ~/.cache/golangci-lint/v1.53.2:/root/.cache -w /app golangci/golangci-lint:v1.53.2 golangci-lint run"
