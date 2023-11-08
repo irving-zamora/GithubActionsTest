@@ -1,6 +1,6 @@
 module tyk-plugin
 
-go 1.20
+go 1.19
 
 require github.com/TykTechnologies/tyk v1.9.2-0.20230630145135-54e1072a6a99
 

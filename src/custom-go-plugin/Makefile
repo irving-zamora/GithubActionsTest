@@ -4,7 +4,7 @@
 #
 ###############################################################################
 
-export TYK_VERSION := v5.0.1
+export TYK_VERSION := v5.0.3
 
 # Default task: sets up development environment
 install: up build
@@ -14,8 +14,14 @@ install: up build
 # Builds the Go plugin
 build: go-build restart-gateway
 
+# Builds the Go plugin without restarting the container
+build-iac: go-build
+
 # Builds production-ready plugin bundle
 bundle: go-bundle restart-gateway
+
+# Builds production-ready plugin bundle  without restarting the container
+bundle-iac: go-bundle
 
 # Outputs the project logs
 logs: docker-logs
