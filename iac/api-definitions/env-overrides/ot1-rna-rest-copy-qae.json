@@ -1,0 +1,10 @@
+{
+	"api_definition": {
+		"name": "OT1 RNA Rest QAE",
+		"slug": "ot1-rna-rest-qae",
+		"org_id": "64876fc80a3c560001dcdd01",
+		"proxy": {
+		  "target_url": "https://ot1-qae-integration.usdc.roadnet.com/"
+		}
+	}
+}

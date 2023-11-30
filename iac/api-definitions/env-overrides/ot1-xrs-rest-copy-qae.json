@@ -1,0 +1,10 @@
+{
+	"api_definition": {
+		"name": "OT1 XRS Rest QAE",
+		"slug": "ot1-xrs-rest-qae",
+		"org_id": "64876fc80a3c560001dcdd01",
+		"proxy": {
+			"target_url": "https://xrs-te-dev-ws.usdc.roadnet.com/"
+		}
+	}
+}
