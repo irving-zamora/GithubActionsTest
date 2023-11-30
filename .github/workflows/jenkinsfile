@@ -1,129 +1,372 @@
+/*
+    pipleine designed to contain all of the logic for the various environments
+    and will be manually triggered for the deployment of api gateway components
+    including api configrations per environment, Go custom plug-in and dev portal docs
+
+    this pipeline is also directly invoked triggered by the "dev-ci_cd" Jenkins job which
+    passes the appropriate parameter values for the dev environment
+*/
+
 pipeline {
-    agent any
+    agent {
+        label "Jenkins_Agent_1"
+    }
+
+    parameters {
+        choice(name: 'SELECTED_ENV', choices: ['dev', 'qae', 'qa2', 'lte', 'ca1', 'ca2', 'prod'], description: 'Choose environement to build and deploy')
+
+        string(name: 'RELEASE_BRANCH', defaultValue: 'release-6.x', description: 'Input the release branch that has been configured in Github')
+    }
 
     environment {
-        GO_VERSION = '1.20' 
-        TYK_VERSION = 'v5.0.3'
-    }
-    
-    tools {
-        go '1.20'
+        TYK_VERSION = 'v5.0.1'
+
+        tykApiKeyEnv = credentials("TYK_ApiDefKey_${SELECTED_ENV}")
+        tykApiGatewayProductKey = credentials("TYK_DB_LICENSEKEY")
+        tykFileServerKey = credentials("TYK_FileSvrApiKey_${SELECTED_ENV}")
     }
 
     stages {
-        stage('Clean Up') {
+        stage('Initialize') {
             steps {
+                echo "SELECTED_ENV = $params.SELECTED_ENV"
+                echo "RELEASE_BRANCH = $params.RELEASE_BRANCH"
                 deleteDir()
             }
         }
         
-        stage('Checkout code') {
+        stage('Clone repo') {
             steps {
                 script {
-                    sh 'git clone https://github.com/irving-zamora/GithubActionsTest.git'
+                    
+                    git branch: "${params.RELEASE_BRANCH}", credentialsId: 'OmniGithubCreds', url: 'https://github.com/Omnitracs/fleet.api-gateway'
+                    
                 }
-            }
-        }
-        
-        stage('Build Go Plugin') {
-            steps {
-                sh '''
-                    cd GithubActionsTest/src/custom-go-plugin
-                    make build
-                '''
             }
         }
 
-        stage('Run Tests') {
-            steps {
-                sh '''
-                    cd GithubActionsTest/src/custom-go-plugin
-                    make test
-                '''
-            }
-        }
-        
-        stage('Generate Coverage') {
+        stage('Load Env Config Values') {
             steps {
                 script {
-                    sh '''
-                        cd GithubActionsTest/src/custom-go-plugin
-                        make coverage
-                    '''
-                    archiveArtifacts artifacts: 'GithubActionsTest/src/custom-go-plugin/go/src/coverage.out', allowEmptyArchive: true
+                    echo "loading properties defined in iac/env-values.json as env vars"
+                    def a = readJSON file: "iac/env-values.json", returnPojo: true
+                    a.each { key, value ->
+                        env."${key}" = value
+                    }
                 }
-            }
+ 
+                sh 'printenv'
+            }  
         }
-        
-        stage('Upload Artifacts and check Coverage Threshold') {
-            steps {
-                script {
-                    sh '''
-                        cd GithubActionsTest/src/custom-go-plugin/go/src/
-                        go tool cover -func=coverage.out > coverage_summary.txt
-                    '''
+
+        stage('Custom Go Plugin') {
+            stages {
+                stage('build') {
+                    steps {
+                        sh """
+                            cd src/custom-go-plugin/tyk/confs
+                            cp tyk_analytics.env.example tyk_analytics.env
+                            sed 's/TYK_DB_LICENSEKEY=/TYK_DB_LICENSEKEY=${tykApiGatewayProductKey}/' tyk_analytics.env
+                            cd ../..
+                            make build-iac
+                        """
+                    }
                 }
-                archiveArtifacts artifacts: 'GithubActionsTest/src/custom-go-plugin/go/src/coverage.html, GithubActionsTest/src/custom-go-plugin/go/src/coverage_summary.txt', allowEmptyArchive: true
-            }
-            post {
-                success {
-                    script {
-                        checkCoverageThreshold()
-                        echo "Coverage above threshold of 80%"
+
+                stage('Run Tests') {
+                    steps {
+                        sh '''
+                            cd src/custom-go-plugin
+                            make test
+                        '''
+                    }
+                }
+
+                stage('Generate Coverage') {
+                    steps {
+                        script {
+                            sh '''
+                                cd src/custom-go-plugin
+                                make coverage
+                                pwd
+                                
+                                ls
+                            '''
+                            archiveArtifacts artifacts: 'src/custom-go-plugin/go/src/coverage.out', allowEmptyArchive: true
+                        }
+                    }
+                }
+                
+                stage('Upload Artifacts and check Coverage Threshold') {
+                    steps {
+                        script {
+                            sh '''
+                                cd src/custom-go-plugin/go/src/
+                                go tool cover -func=/tmp/test-results/coverage.out > coverage_summary.txt
+                            '''
+                        }
+                        archiveArtifacts artifacts: 'src/custom-go-plugin/go/src/coverage.html, /var/lib/jenkins/workspace/Omnitracs Fleet Solutions API Gateway/ru-test-pipeline/src/custom-go-plugin/go/src/coverage_summary.txt', allowEmptyArchive: true
+                    }
+                    post {
+                        success {
+                            script {
+                                checkCoverageThreshold()
+                                echo "Coverage above threshold of 80%"
+                            }
+                        }
+                    }
+                }
+
+                stage('Set up Tyk cli') {
+                    steps {
+                        sh '''
+                            cd src/custom-go-plugin/go/src
+                            go get -d github.com/TykTechnologies/tyk-cli
+                            go mod tidy ; \
+                            go mod vendor
+                        '''
+                    }
+                }
+
+                stage('Bundle custom plugin') {
+                    steps {
+                        sh '''
+                            cd src/custom-go-plugin
+                            make PLUGIN_VERSION=v1.0.3 ENV=${SELECTED_ENV} BUNDLE_USER=root bundle-iac
+                        '''
+                        archiveArtifacts artifacts: 'src/custom-go-plugin/tyk/bundle/bundle.zip', allowEmptyArchive: true
                     }
                 }
             }
         }
-        
-        stage('Set up Tyk cli') {
-            steps {
-                sh '''
-                    cd GithubActionsTest/src/custom-go-plugin/go/src
-                    go get -d github.com/TykTechnologies/tyk-cli
-                    go mod tidy ; \
-	                go mod vendor
-                '''
+
+        stage('Process Api Configs') {
+            steps {                
+                script {                    
+                    // depending on the branch selected we assign url to our env var
+                    def apiDefUrlKey = "Tyk_ApiDefEndpoint_Url_$params.SELECTED_ENV"
+ 
+                    def endPointURL = env."${apiDefUrlKey}"
+                    echo "${apiDefUrlKey} env var = ${endPointURL}"
+
+                    def basedApiDefPath = 'iac/api-definitions/base'
+                    def filesList = sh(script: "find ${basedApiDefPath} -type f", returnStdout: true).trim().split('\n')
+                    
+                    // declaring jsonarrays to store all the jsons loads for the put and post requests
+                    def jsonArrayPUT = []
+                    def jsonArrayPOST = []
+
+                    // environment variable to store the IDs of the APIs
+                    env.apisIDsList = ''
+
+                    // loop through each api def file in base folder to merge it with its file in env-overrides folder
+                    // base on the current name of api def file and selected environment
+                    filesList.each { file ->
+                        echo "your file is: - ${file}"
+
+                        def fileName = file.tokenize('/').last()
+                        def fileNameNoExtension = fileName.substring(0, fileName.lastIndexOf('.'))
+
+                        // reading the file in base folder
+                        def jsonText = readFile file
+                        // reading the file in env-overrides folder
+                        def pathOverridesFile = "iac/api-definitions/env-overrides/${fileNameNoExtension}-"+SELECTED_ENV+'.json'
+                        def jsonText2 = readFile pathOverridesFile
+
+                        def regex = /"name": "([^"]*)"/
+                        def matcher = (jsonText2 =~ regex)
+                        
+                        def apiName=''
+                        if (matcher.find()) {
+                            apiName = matcher.group(1)
+                            // replacing blank spaces to avoid errors in GET request
+                            apiName = apiName.replaceAll(" ","%20")
+                            echo "Derived api name: ${apiName}"
+                        }
+                        matcher = null
+                        
+                        // run the command jq to merge dynamically the overrides into the base api def
+                        def mergedJson = sh(script: """
+                            echo '${jsonText}' | jq --slurpfile replacement '${pathOverridesFile}' '. * \$replacement[0]'
+                        """, returnStdout: true).trim()
+
+                        // check if api already deployed by trying to get existing api
+                        def response = sh(script: 'curl --location ' +'"'+ endPointURL +'?q='+apiName+'" '+' --header "authorization: ${tykApiKeyEnv}"', returnStdout: true).trim()
+
+                        def parsedJson = new groovy.json.JsonSlurperClassic().parseText(response)
+
+                        def apiDef_id = ''
+                        def apiDef_api_id = ''
+                        def updatedJson = ''
+                        if (parsedJson.apis.size() > 0) {
+                            // api already exists so will do a PUT to update it
+                            apiDef_id = parsedJson.apis[0].api_definition.id
+                            apiDef_api_id = parsedJson.apis[0].api_definition.api_id
+                            
+                            // replace id and api_id of api_definition with the values we found in the GET request
+                            updatedJson = sh(script: """
+                                echo '${mergedJson}' | jq '.api_definition.id = "${apiDef_id}" | .api_definition.api_id = "${apiDef_api_id}"'
+                                """, returnStdout: true).trim()                
+
+                            jsonArrayPUT.add(updatedJson)
+                            env.apisIDsList += apiDef_id + ","
+                        } else {
+                            // new api that has not been previously deployed
+
+                            // deleting id and api_id from api_definition, we don't need these fields in POST requests
+                            updatedJson = sh(script: """
+                                echo '${mergedJson}' | jq 'del(.api_definition.id, .api_definition.api_id)'
+                            """, returnStdout: true).trim()
+
+                            jsonArrayPOST.add(updatedJson)                          
+                        }
+                    }
+                    //Saving the arrays in environment variables
+                    env.jsonArrayPOSTGlobal = new groovy.json.JsonBuilder(jsonArrayPOST).toPrettyString()
+                    env.jsonArrayPUTGlobal = new groovy.json.JsonBuilder(jsonArrayPUT).toPrettyString()
+                }
             }
         }
-        
-        stage('Bundle') {
+
+        stage('Confirm Deployment') {
+            when {
+                expression { params.RELEASE_BRANCH != 'develop' }
+            }
             steps {
-                sh '''
-                    cd GithubActionsTest/src/custom-go-plugin
-                    make PLUGIN_VERSION=v1.0.3 ENV=dev BUNDLE_USER=root bundle
-                '''
-                archiveArtifacts artifacts: 'GithubActionsTest/src/custom-go-plugin/tyk/bundle/bundle.zip', allowEmptyArchive: true
+                input('Do you want to proceed with deployment?')                
             }
         }
+
+        stage('Deployment') {
+            stages {
+                stage('Upload bundle to S3') {                    
+                    steps {
+                        script{
+                            sh '''
+                                cd src/custom-go-plugin/go/src
+                                go get -d github.com/TykTechnologies/mserv
+                                
+                                wget https://github.com/TykTechnologies/mserv/releases/download/v0.9.9-beta.1/mservctl.linux.amd64
+                                ls
+                                pwd
+                                
+                                chmod +x mservctl.linux.amd64
+                            '''
+
+                            def mservURLkey = "Tyk_MservFileServer_$params.SELECTED_ENV"
+                            env.mservURLEndPoint = env."${mservURLkey}"
+
+                            def mservOutput = sh(
+                                    script: "src/custom-go-plugin/go/src/mservctl.linux.amd64 --endpoint ${env.mservURLEndPoint} --token ${tykFileServerKey} push src/custom-go-plugin/tyk/bundle/bundle.zip >>result.txt 2>&1",
+                                    returnStdout: true
+                                ).trim()
+                            
+                            result = readFile('result.txt').trim()
+                            
+                            echo "mservctl RESULT: ${result}"
+
+                            // extract the "bundle ID" value using regular expressions
+                            def idMatch = result =~ /ID: ([\w-]+)/
+                            
+                            if (idMatch) {
+                                env.BUNDLE_ID = idMatch[0][1].trim()
+                                echo "ID: ${env.BUNDLE_ID}"
+                            } else {
+                                error "Failed to extract the ID from mserv output."
+                            }
+                            
+                        }
+                    }
+                }
+
+                stage('Deploy api configs') {
+                    steps {
+                        echo 'deploy merged api config to the correct gateway'
+
+                        script {
+                            
+                            def jsonArrayForPUTRequests = new groovy.json.JsonSlurperClassic().parseText(env.jsonArrayPUTGlobal)
+                            def jsonArrayForPOSTRequests = new groovy.json.JsonSlurperClassic().parseText(env.jsonArrayPOSTGlobal)
+                            
+                            // recovering IDs for the APIs stored in the jsonArrayForPUTRequests
+                            def apisIDs = env.apisIDsList.split(',')
+                            def x = 0
+
+                            echo "Array of APIs to be updated: ${apisIDs}"
+
+                            def apiDefUrlKey = "Tyk_ApiDefEndpoint_Url_$params.SELECTED_ENV" 
+                            def endPointURL = env."${apiDefUrlKey}"
+                            
+                            // deploy api updates
+                            if (jsonArrayForPUTRequests instanceof List && !jsonArrayForPUTRequests.isEmpty()) {
+                                for (item in jsonArrayForPUTRequests) {
+                            
+                                    // using regular expressions because this is json string
+                                    def regexPattern = "\"custom_middleware_bundle\": \"[^\"]*\""
+                                    item = item.replaceAll(regexPattern, "\"custom_middleware_bundle\": \"$env.BUNDLE_ID\"")
+                                    
+                                    echo "current api_id being updated: ${apisIDs[x]}, in position ${x}"
+
+                                    def response2 = sh(script: """
+                                        curl --location --request PUT "${endPointURL}/${apisIDs[x]}" --header 'Content-Type: application/json' --header "authorization: ${tykApiKeyEnv}" --data '${item}'
+                                    """, returnStatus: true)
         
-        stage('Upload bundle to S3') {
-            steps {
-                script{
-                    sh '''
-                        cd GithubActionsTest/src/custom-go-plugin/go/src
-                        go get -d github.com/TykTechnologies/mserv
-                        
-                        wget https://github.com/TykTechnologies/mserv/releases/download/v0.9.9-beta.1/mservctl.linux.amd64
-                        ls
-                        pwd
-                        
-                        chmod +x mservctl.linux.amd64
-                    '''
-                    def mservOutput = sh(
-                            script: '/var/lib/jenkins/workspace/Docker\\ simple/GithubActionsTest/src/custom-go-plugin/go/src/mservctl.linux.amd64 --config GithubActionsTest/src/custom-go-plugin/go/src/mserv.yaml push GithubActionsTest/src/custom-go-plugin/tyk/bundle/bundle.zip',
-                            returnStdout: true
-                        ).trim()
-                    
-                    echo "MSERV output: ${mservOutput}"
-                    
-                     def output = sh(
-                            script: 'ls -al',
-                            returnStdout: true
-                        ).trim()
-                    
-                    echo "output: ${output}"
-                    
-                    MSERV_ID = "d793c617-957b-445a-8f4c-da96ef0199e7"
+                                    if (response2 == 0) {
+                                        echo "updating api successful: ${apisIDs[x]}"
+                                    } else {
+                                        error "ERROR updating api: ${apisIDs[x]}"
+                                    }
+                                    x++
+                                }
+                            }
+
+                            // deploy new apis
+                            if (jsonArrayForPOSTRequests instanceof List && !jsonArrayForPOSTRequests.isEmpty()) {
+
+                                for (item in jsonArrayForPOSTRequests) {
+                                    
+                                    // update the custom plugin bundleId to bundleId that was just deployed
+                                    // using regular expressions because this is json string
+                                    def regexPattern = "\"custom_middleware_bundle\": \"[^\"]*\""
+                                    item = item.replaceAll(regexPattern, "\"custom_middleware_bundle\": \"$env.BUNDLE_ID\"")
+                                    
+                                    def response2 = sh(script: """
+                                        curl --location --request POST "${endPointURL}" --header 'Content-Type: application/json' --header "authorization: ${tykApiKeyEnv}" --data '${item}'
+                                    """, returnStatus: true)
+                                    
+                                    if (response2 == 0) {
+                                        echo "posting api successful"
+                                    } else {
+                                        error "ERROR posting new api"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                stage('Finalization'){
+                    steps{
+                        script{
+                            // Listing the uploaded objects -- intention is to check for a "clean" which seems to indicate that everything was cleanly deployed
+                            // if cannot list then there was some issue that needs to be further diagnosed
+                            def mservURLkey = "Tyk_MservFileServer_$params.SELECTED_ENV"
+                            def mservURLEndPoint = env."${mservURLkey}"
+
+                            def mservList = sh(
+                                    script: "src/custom-go-plugin/go/src/mservctl.linux.amd64 --endpoint ${mservURLEndPoint} --token ${tykFileServerKey} list",
+                                    returnStdout: true
+                                ).trim()
+
+                            echo "mservctl list output: ${mservList}"
+                        }
+                    }
+                }
+
+                stage('Deploy api docs') {
+                    steps {
+                        echo 'deploy api doc to dev portal -- this needs to be thought through more'
+                    }
                 }
             }
         }
@@ -132,20 +375,20 @@ pipeline {
 
 def checkCoverageThreshold() {
     def coverageThreshold = 80.0  // Define your desired coverage threshold
-    def coverageReport = readFile('GithubActionsTest/src/custom-go-plugin/go/src/coverage_summary.txt')
+    def coverageReport = readFile('src/custom-go-plugin/go/src/coverage_summary.txt')
 
     /// Extract the coverage percentage from the last line of the report
     def lastLine = coverageReport.readLines().last()
     def matcher = lastLine =~ /(\d+\.\d+)%/
-    
-    ///split it by tabs, and extract the coverage percentage from the last element after splitting. 
+
+    ///split it by tabs, and extract the coverage percentage from the last element after splitting.
     if (matcher) {
-        def coveragePercentage = lastLine[matcher.start(1)..matcher.end(1)-1].toDouble()
-        
+        def coveragePercentage = lastLine[matcher.start(1)..matcher.end(1) - 1].toDouble()
+
         if (coveragePercentage < coverageThreshold) {
             error("Coverage below threshold (${coveragePercentage}% < ${coverageThreshold}%), stopping the pipeline.")
         }
     } else {
-        error("Failed to extract coverage percentage from the report.")
+        error('Failed to extract coverage percentage from the report.')
     }
 }

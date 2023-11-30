@@ -1,0 +1,20 @@
+{
+    "Tyk_ApiDefEndpoint_Url_dev": "https://dusty-colt-adm.aws-use1.cloud-ara.tyk.io/api/apis",
+    "Tyk_MservFileServer_dev": "https://dusty-colt-mgw.aws-use1.cloud-ara.tyk.io/mserv",
+  
+    "Tyk_ApiDefEndpoint_Url_qae": "https://isolated-crab-adm.aws-use1.cloud-ara.tyk.io/api/apis",
+    "Tyk_MservFileServer_qae": "https://isolated-crab-mgw.aws-use1.cloud-ara.tyk.io/mserv",
+    
+    "Tyk_ApiDefEndpoint_Url_qa2": "https://isolated-crab-adm.aws-use1.cloud-ara.tyk.io/api/apis",
+    "Tyk_MservFileServer_qa2": "https://isolated-crab-mgw.aws-use1.cloud-ara.tyk.io/mserv",
+    
+    "Tyk_ApiDefEndpoint_Url_ca1": "https://double-attorney-adm.aws-use1.cloud-ara.tyk.io/api/apis",
+    "Tyk_MservFileServer_ca1": "https://double-attorney-mgw.aws-use1.cloud-ara.tyk.io/mserv",
+    
+    "Tyk_ApiDefEndpoint_Url_ca2": "https://double-attorney-adm.aws-use1.cloud-ara.tyk.io/api/apis",
+    "Tyk_MservFileServer_ca2": "https://double-attorney-mgw.aws-use1.cloud-ara.tyk.io/mserv",
+    
+    "Tyk_ApiDefEndpoint_Url_prod": "",
+    "Tyk_MservFileServer_prod": ""
+  }
+  

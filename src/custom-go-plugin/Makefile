@@ -14,13 +14,13 @@ install: up build
 # Builds the Go plugin
 build: go-build restart-gateway
 
-# Builds the Go plugin without restarting the container
+# Builds the Go plugin without restarting the gateway
 build-iac: go-build
 
 # Builds production-ready plugin bundle
 bundle: go-bundle restart-gateway
 
-# Builds production-ready plugin bundle  without restarting the container
+# Builds production-ready plugin bundle without restarting the gateway
 bundle-iac: go-bundle
 
 # Outputs the project logs

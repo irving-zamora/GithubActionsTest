@@ -1,0 +1,10 @@
+{
+    "api_definition": {
+      "name": "OT1 Mcleod DEV",
+      "slug": "ot1-mcleod-dev",
+      "org_id": "648b160d922ee4000128922e",
+      "proxy": {
+        "target_url": "https://ma-mcleod-int.dev.cld.omnitracs.com/"
+      }
+  }
+}

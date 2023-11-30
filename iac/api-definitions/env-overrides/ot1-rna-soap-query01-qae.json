@@ -1,0 +1,10 @@
+{
+	"api_definition": {
+		"name": "OT1 RNA Soap Query01 QAE",
+		"slug": "ot1-rna-soap-query01-qae",
+		"org_id": "64876fc80a3c560001dcdd01",
+		"proxy": {
+			"target_url": "https://ot1-qae-query01.usdc.roadnet.com/"
+		}
+	}
+}

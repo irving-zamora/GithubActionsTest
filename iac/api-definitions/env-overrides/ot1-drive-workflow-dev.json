@@ -1,7 +1,10 @@
 {
-  "api_definition": {
-    "name": "OT1_Drive_Workflow_DEV",
-    "slug": "ot1-drive-workflow-dev",
-    "org_id": "648b160d922ee4000128922e"
+    "api_definition": {
+      "name": "OT1 Drive Workflow DEV",
+      "slug": "ot1-drive-workflow-dev",
+      "org_id": "648b160d922ee4000128922e",
+      "proxy": {
+        "target_url": "https://ma-core-api.dev.cld.omnitracs.com/"
+      }
   }
 }

@@ -1,4 +1,5 @@
 {
+  "created_at": "2023-06-15T14:49:18Z",
   "api_model": {},
   "api_definition": {
     "api_id": "",
@@ -28,10 +29,10 @@
       }
     },
     "disable_quota": false,
-    "custom_middleware_bundle": "",
+    "custom_middleware_bundle": "d793c617-957b-445a-8f4c-da96ef0199e7",
     "cache_options": {
       "cache_timeout": 60,
-      "enable_cache": true,
+      "enable_cache": false,
       "cache_all_safe_requests": false,
       "cache_response_codes": [],
       "enable_upstream_cache_control": false,
@@ -65,17 +66,17 @@
           {
             "method": "GET",
             "requests": -1,
-            "resource": "/ping",
+            "resource": "/login",
             "seconds": -1
           }
         ],
-        "requests": 3,
+        "requests": 5,
         "seconds": 15,
         "sessionTtlMin": 1440,
         "strategy": {
           "config": {
             "headerNames": [
-              "x-tenant-id"
+              "Authorization"
             ],
             "separator": "::"
           },
@@ -230,7 +231,7 @@
       "preserve_host_header": false,
       "strip_listen_path": false,
       "enable_load_balancing": false,
-      "listen_path": "/api/{?:(?i)1.0|diag}",
+      "listen_path": "/{?:(?i)integration/v1}/",
       "disable_strip_slash": true
     },
     "client_certificates": [],
@@ -495,7 +496,7 @@
     "internal": false,
     "jwt_skip_kid": false,
     "enable_batch_request_support": false,
-    "enable_detailed_recording": true,
+    "enable_detailed_recording": false,
     "scopes": {
       "jwt": {},
       "oidc": {}

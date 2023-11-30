@@ -1,4 +1,5 @@
 {
+  "created_at": "2023-06-15T15:28:56Z",
   "api_model": {},
   "api_definition": {
     "api_id": "",
@@ -28,7 +29,7 @@
       }
     },
     "disable_quota": false,
-    "custom_middleware_bundle": "",
+    "custom_middleware_bundle": "d793c617-957b-445a-8f4c-da96ef0199e7",
     "cache_options": {
       "cache_timeout": 60,
       "enable_cache": true,
@@ -60,26 +61,14 @@
     "config_data": {
       "rateLimiting": {
         "LogLevel": 0,
-        "active": true,
-        "overrides": [
-          {
-            "method": "GET",
-            "requests": -1,
-            "resource": "/ping",
-            "seconds": -1
-          }
-        ],
-        "requests": 3,
-        "seconds": 15,
+        "active": false,
+        "overrides": [],
+        "requests": 2,
+        "seconds": 10,
         "sessionTtlMin": 1440,
         "strategy": {
-          "config": {
-            "headerNames": [
-              "x-tenant-id"
-            ],
-            "separator": "::"
-          },
-          "name": "requestHeaders"
+          "config": {},
+          "name": "sessionGuid"
         }
       }
     },
@@ -230,7 +219,7 @@
       "preserve_host_header": false,
       "strip_listen_path": false,
       "enable_load_balancing": false,
-      "listen_path": "/api/{?:(?i)1.0|diag}",
+      "listen_path": "/{?:(?i)Login/LoginService.svc}",
       "disable_strip_slash": true
     },
     "client_certificates": [],
@@ -495,7 +484,7 @@
     "internal": false,
     "jwt_skip_kid": false,
     "enable_batch_request_support": false,
-    "enable_detailed_recording": true,
+    "enable_detailed_recording": false,
     "scopes": {
       "jwt": {},
       "oidc": {}

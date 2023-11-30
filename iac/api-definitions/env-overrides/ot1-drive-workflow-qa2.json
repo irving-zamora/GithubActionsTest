@@ -1,0 +1,10 @@
+{
+	"api_definition": {
+		"name": "OT1 Drive Workflow QA2",
+		"slug": "ot1-drive-workflow-qa2",
+		"org_id": "64876fc80a3c560001dcdd01",
+		"proxy": {
+		  "target_url": "https://ma-core-api-cert.test.cld.omnitracs.com/"
+		}
+	}
+}

@@ -1,0 +1,10 @@
+{
+	"api_definition": {
+		"name": "OT1 RNA Soap Routing01 DEV",
+		"slug": "ot1-rna-soap-routing01-dev",
+		"org_id": "648b160d922ee4000128922e",
+		"proxy": {
+			"target_url": "https://apex-te-dev-routing01.usdc.roadnet.com/"
+		}
+	}
+}

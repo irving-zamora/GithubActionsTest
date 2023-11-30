@@ -1,0 +1,10 @@
+{
+	"api_definition": {
+		"name": "OT1 RNA Rest DEV",
+		"slug": "ot1-rna-rest-dev",
+		"org_id": "648b160d922ee4000128922e",
+		"proxy": {
+			"target_url": "https://apex-te-dev-integration.usdc.roadnet.com/"
+		}
+	}
+}

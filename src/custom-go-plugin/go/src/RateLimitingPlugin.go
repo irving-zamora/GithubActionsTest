@@ -50,13 +50,15 @@ type Strategy struct {
 }
 
 type StrategyConfig struct {
-	HeaderNames []string `json:"headerNames"`
-	Separator   string   `json:"separator"`
+	HeaderNames         []string `json:"headerNames"`
+	Separator           string   `json:"separator"`
+	CombineRestWithSoap bool     `json:"combineRestWithSoap"`
 }
 
 const requestHeaders = "requestHeaders"
 const requestHeadersXRS = "requestHeadersXRS"
 const sessionGuid = "sessionGuid"
+const soapRequestXRS = "soapRequestXRS"
 
 // The rate limiter function that will be configured to be invoked for each api definition that is
 // a part of the legacy phase 1 implementation.
@@ -156,7 +158,7 @@ func lookForOverridesInRequest(requestUrl string, rateLimitingConfig RateLimitin
 	for _, override := range rateLimitingConfig.RateLimiting.Overrides {
 		resourceValue := override.Resource
 
-		if strings.Contains(requestUrl, resourceValue) {
+		if caseInsensitiveContains(requestUrl, resourceValue) {
 			DebugLog("Override found for request: ", resourceValue)
 			return resourceValue
 		}
@@ -183,7 +185,7 @@ func getRateLimits(rateLimitingConfig RateLimitingConfig, resource string, metho
 
 			// if a match is found then set the values from the overrides config
 			// for the 'requests', 'seconds' and 'sessionTtl'
-			if override.Resource == resource && override.Method == method {
+			if strings.EqualFold(override.Resource, resource) && strings.EqualFold(override.Method, method) {
 				return float64(override.Requests), float64(override.Seconds), int64(rateLimitingConfig.RateLimiting.SessionTtlMin), nil
 			}
 		}
@@ -218,9 +220,11 @@ func selectStrategy(rateLimitingConfig RateLimitingConfig, req *http.Request) st
 			keyID := createUniqueKeyIDSessionGuid(req)
 
 			return keyID
-		case "otherName":
-			// Call other function based on the name
+		case soapRequestXRS:
+			InfoLog("strategy to be applied: ", name)
+			keyID := createUniqueKeyIdSoapRequestXRS(rateLimitingConfig, req)
 
+			return keyID
 		default:
 			return ("unknown strategy name: ")
 		}
@@ -267,9 +271,16 @@ func createUniqueKeyIdHeadersXRS(rateLimitingConfig RateLimitingConfig, req *htt
 	if err != nil {
 		panic(err)
 	}
-	customerId := strings.Split(string(rawDecodedAuth), "|")
 
-	return customerId[0]
+	customerId := extractStringBeforeSeparator(string(rawDecodedAuth), "|")
+
+	name := rateLimitingConfig.RateLimiting.Strategy.Name
+
+	if !(rateLimitingConfig.RateLimiting.Strategy.Config.CombineRestWithSoap) {
+		customerId = appendApiType(customerId, name)
+	}
+
+	return customerId
 }
 
 // function takes an http.Request as input and retrieves the value of
@@ -298,6 +309,34 @@ func createUniqueKeyIDSessionGuid(req *http.Request) string {
 	return ""
 }
 
+// function takes an http.Request as input and retrieves the value of username
+// from the xml body and takes the companyId
+// Returns: The extracted companyId value as string.
+func createUniqueKeyIdSoapRequestXRS(rateLimitingConfig RateLimitingConfig, req *http.Request) string {
+	body, err := ioutil.ReadAll(req.Body)
+	if err == nil {
+		sb := string(body)
+		DebugLog("request body: ", sb)
+		name := rateLimitingConfig.RateLimiting.Strategy.Name
+
+		re := regexp.MustCompile(`<(\w+:)?Username>(.*?)<\/(\w+:)?Username>`)
+		matches := re.FindStringSubmatch(sb)
+		if len(matches) >= 3 {
+			DebugLog("Username value: ", matches[2])
+			keyId := extractStringBeforeSeparator(matches[2], "|")
+			if !(rateLimitingConfig.RateLimiting.Strategy.Config.CombineRestWithSoap) && matches[2] != "" {
+				keyId = appendApiType(keyId, name)
+			}
+			return keyId
+		} else {
+			DebugLog("no Username found")
+		}
+	} else {
+		DebugLog("request body: NONE")
+	}
+	return ""
+}
+
 // Parses the provided JSON string into a RateLimitingConfig struct
 // Returns a struct of type RateLimitingConfig that mirrors the structure of the JSON.
 func generateStructFromJSON(jsonStr string) (RateLimitingConfig, error) {
@@ -309,6 +348,33 @@ func generateStructFromJSON(jsonStr string) (RateLimitingConfig, error) {
 	}
 
 	return jsonData, nil
+}
+
+// caseInsensitiveContains checks if 'substr' is a case-insensitive substring of 'str'
+func caseInsensitiveContains(str, substr string) bool {
+	strLower := strings.ToLower(str)
+	substrLower := strings.ToLower(substr)
+	return strings.Contains(strLower, substrLower)
+}
+
+// function takes two parameters: the input string and the separator character.
+// It then uses the specified separator to split the string into parts.
+func extractStringBeforeSeparator(input, separator string) string {
+	parts := strings.Split(input, separator)
+	return parts[0]
+}
+
+// function checks if the input contains "requestHeadersXRS" or "soapRequestXRS"
+// and appends the corresponding string ("-rest" or "-soap").
+// If the input doesn't match any of these conditions, it returns the input unchanged.
+func appendApiType(keyId string, name string) string {
+	switch name {
+	case requestHeadersXRS:
+		return keyId + "-rest"
+	case soapRequestXRS:
+		return keyId + "-soap"
+	}
+	return keyId
 }
 
 func main() {}
