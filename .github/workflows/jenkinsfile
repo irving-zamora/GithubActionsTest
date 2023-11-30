@@ -39,7 +39,7 @@ pipeline {
             steps {
                 script {
                     
-                    git branch: "${params.RELEASE_BRANCH}", credentialsId: 'OmniGithubCreds', url: 'https://github.com/Omnitracs/fleet.api-gateway'
+                    git branch: "${params.RELEASE_BRANCH}", credentialsId: 'OmniGithubCreds', url: 'https://github.com/irving-zamora/GithubActionsTest'
                     
                 }
             }
